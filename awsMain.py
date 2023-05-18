@@ -10,8 +10,8 @@ load_dotenv()
 
 apiKey = os.getenv('API_KEY')
 secretKey = os.getenv('SECRET_KEY')
-weeklyLimit = float(os.getenv('WEEKLY_LIMIT'))
 tickers = json.loads(os.getenv('TICKERS'))
+weeklyLimit = float(os.getenv('WEEKLY_LIMIT')) / len(tickers)
 displace = 5
 timeout = 60
 
