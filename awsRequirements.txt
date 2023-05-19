@@ -2,3 +2,4 @@ python-dotenv
 alpaca-py
 pydantic
 typing_extensions
+requests
