@@ -20,6 +20,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --no-deps -r awsRequirements.txt -t .
+
       - name: Create Lambda deployment package
         run: |
           zip -r deployment-package.zip .
