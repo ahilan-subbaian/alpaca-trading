@@ -23,6 +23,7 @@ jobs:
       - name: Create Lambda deployment package
         run: |
           zip -r deployment-package.zip .
+          zip -uj lambda_function.zip packages.zip
 
       - name: Deploy to AWS Lambda
         run: |
