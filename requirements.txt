@@ -1,6 +1,2 @@
+python-dotenv
 alpaca-py
-os
-dot-env
-time
-datetime
-calendar

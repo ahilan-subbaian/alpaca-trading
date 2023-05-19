@@ -1,12 +1,10 @@
-import os
-from dotenv import load_dotenv
+from lambda_function import *
+import time
+start = time.time()
 
-import OrderClient
+testEvent = {}
+testContext = {}
 
-load_dotenv()
+print(lambda_handler(testEvent, testContext))
 
-apiKey = os.getenv('API_KEY')
-secretKey = os.getenv('SECRET_KEY')
-
-client = OrderClient.OrderClient(apiKey, secretKey, paper=True)
-print(client.execute(['VONG', 'SCHD', 'SCHG', 'SPGP', 'RSP']))
+print(f"Total time: {time.time() - start}")
