@@ -34,11 +34,12 @@ def calculate_fridays(day_displace):
 
 
 class localClient:
-    def __init__(self, apiKey, secretKey, limit, tickers, displace, timeout=60, paper=True):
+    def __init__(self, apiKey, secretKey, limit, tickers, displace, timeout, paper=True):
         self.client = TradingClient(apiKey, secretKey, paper=paper)
         self.displace = displace
         self.tickers = tickers
         self.limit = limit
+        self.timeout = timeout
 
     def get_investments(self):
         holdings = self.client.get_all_positions()
@@ -65,7 +66,7 @@ class localClient:
                           self.get_cash(), self.limit)
         orders = self.placeAllOrders(dollarValue)
 
-        time.sleep(60)
+        time.sleep(self.timeout)
 
         statuses = [self.client.get_order_by_id(
             order.id).status.lower() for order in orders]

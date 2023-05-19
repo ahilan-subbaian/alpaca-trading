@@ -6,7 +6,8 @@ testEvent = {
     'tickers': ["VONG", "SCHD", "SCHG", "SPGP", "RSP"],
     'limit': 50,
     'displace': 5,
-    'timeout': 60
+    'timeout': 60,
+    'paper': True
 }
 
 testContext = {}
