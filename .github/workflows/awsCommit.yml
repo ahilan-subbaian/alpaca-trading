@@ -20,8 +20,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
+      - name: Create Lambda deployment package
+        run: |
+          zip -r deployment-package.zip .
+
       - name: Deploy to AWS Lambda
         run: |
           aws lambda update-function-code \
             --function-name alpacaTrading \
-            --zip-file fileb://path/to/your/code.zip
+            --zip-file fileb://deployment-package.zip
