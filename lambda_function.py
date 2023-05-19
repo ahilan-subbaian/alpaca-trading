@@ -10,11 +10,12 @@ def lambda_handler(event, context):
 
     apiKey = os.getenv('API_KEY')
     secretKey = os.getenv('SECRET_KEY')
-    tickers = ["VONG", "SCHD", "SCHG", "SPGP", "RSP"]
-    weeklyLimit = 50 / len(tickers)
-    displace = 5
-    timeout = 60
+
+    tickers = event['tickers']
+    limit = event['limit']
+    displace = event['displace']
+    timeout = event['timeout']
 
     client = traderClient.localClient(
-        apiKey, secretKey, weeklyLimit, tickers, displace, timeout)
+        apiKey, secretKey, limit, tickers, displace, timeout)
     return client.execute()
