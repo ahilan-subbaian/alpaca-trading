@@ -3,3 +3,4 @@ alpaca-py
 pydantic
 typing_extensions
 requests
+charset_normalizer
