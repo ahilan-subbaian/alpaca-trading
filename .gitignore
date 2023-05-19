@@ -1,4 +1,3 @@
 .env
-.vscode
-awsPackages
-__pycache__
+.vscode/
+packages/
