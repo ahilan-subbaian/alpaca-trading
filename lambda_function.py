@@ -5,9 +5,12 @@ import traderClient
 import logging
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 def lambda_handler(event, context):
+
+    logger.info(f"Event passed in {event}")
 
     apiKey = os.getenv('API_KEY')
     secretKey = os.getenv('SECRET_KEY')
@@ -24,7 +27,10 @@ def lambda_handler(event, context):
     response = client.execute()
 
     if not response['result']:
-        logging.error(
-            f"[ERROR] traderClient.executeError: {response['message']}")
+        logger.error(
+            f"Response message: {response['message']}")
+    else:
+        logger.info(
+            f"Response message: {response['message']}")
 
     return response

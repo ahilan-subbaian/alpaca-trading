@@ -3,27 +3,9 @@ from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 import datetime
 import time
+import logging
 
-
-def calculate_fridays(day_displace):
-
-    # gets number of fridays [start, end)
-    def fridays_between(start, end):
-        fridays = 0
-        while start < end:
-            if start.weekday() == 4:
-                fridays += 1
-            start += datetime.timedelta(days=1)
-        return fridays
-
-    # Get today's date
-    today = datetime.datetime.now()
-
-    # get displaced start date
-    end_date = datetime.datetime(
-        today.year, (today.month + (today.day >= day_displace)) % 12, day_displace)
-
-    return 0 if (days := fridays_between(today, end_date)) == 0 else 1 / days
+logger = logging.getLogger(__name__)
 
 
 class localClient:
@@ -51,8 +33,14 @@ class localClient:
                 fridays += 1
             today += datetime.timedelta(days=1)
 
-        dollarValue = 0 if fridays == 0 else 1 / fridays
+        if fridays == 0:
+            logger.error("Variable friday set to zero value")
+            return 0
+
+        dollarValue = 1 / fridays
         dollarValue *= self.get_cash()
+        logger.info(
+            f"Investable cash by ratio: ${dollarValue:.2f} and investable cash by limit: ${self.limit}")
         dollarValue = min(dollarValue, self.limit)
 
         return dollarValue
