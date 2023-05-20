@@ -71,7 +71,7 @@ class localClient:
                 messages.append(
                     f"Order failed on {ticker} with status: {status}.")
 
-        if len(messages) > 0:
+        if len(messages) == 0:
             result["result"] = True
             result["message"] = "Successfully completed all orders"
         else:
