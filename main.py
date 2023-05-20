@@ -3,9 +3,8 @@ import time
 start = time.time()
 
 print(f"Start time: {start}\n\n")
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
+os.environ['LOG_LEVEL'] = 'INFO'
 
 testEvent = {
     'tickers': ["VONG", "SCHD", "SCHG", "SPGP", "RSP"],
