@@ -24,7 +24,7 @@ def lambda_handler(event, context):
     response = client.execute()
 
     if not response['result']:
-        logging.info(
+        logging.error(
             f"[ERROR] traderClient.executeError: {response['message']}")
 
     return response
