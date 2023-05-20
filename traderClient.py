@@ -35,8 +35,27 @@ class localClient:
         self.timeout = timeout
 
     def get_investments(self):
-        holdings = self.client.get_all_positions()
-        return holdings
+        return self.client.get_all_positions()
+
+    def investmentAmount(self):
+        # Get today's date
+        today = datetime.datetime.now()
+
+        # get displaced start date
+        end_date = datetime.datetime(
+            today.year, (today.month + (today.day >= self.displace)) % 12, self.displace)
+
+        fridays = 0
+        while today < end_date:
+            if today.weekday() == 4:
+                fridays += 1
+            today += datetime.timedelta(days=1)
+
+        dollarValue = 0 if fridays == 0 else 1 / fridays
+        dollarValue *= self.get_cash()
+        dollarValue = min(dollarValue, self.limit)
+
+        return dollarValue
 
     def get_cash(self):
         return float(self.client.get_account().cash)
@@ -53,14 +72,7 @@ class localClient:
             orderInfos.append(self.marketBuyOrder(ticker, dollarValue))
         return orderInfos
 
-    def execute(self):
-        result = {"result": False, "message": "All orders failed"}
-        dollarValue = min(calculate_fridays(self.displace) *
-                          self.get_cash(), self.limit)
-        orders = self.placeAllOrders(dollarValue)
-
-        time.sleep(self.timeout)
-
+    def getStatus(self, orders):
         statuses = [self.client.get_order_by_id(
             order.id).status.lower() for order in orders]
 
@@ -70,6 +82,16 @@ class localClient:
             if status != 'filled':
                 messages.append(
                     f"Order failed on {ticker} with status: {status}.")
+
+        return messages
+
+    def execute(self):
+        result = {"result": False, "message": "All orders failed"}
+
+        dollarValue = self.investmentAmount()
+        orders = self.placeAllOrders(dollarValue)
+        time.sleep(self.timeout)
+        messages = self.getStatus(orders)
 
         if len(messages) == 0:
             result["result"] = True
