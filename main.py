@@ -11,7 +11,8 @@ testEvent = {
     'limit': 50,
     'displace': 5,
     'timeout': 10,
-    'paper': True
+    'logging': 'INFO',
+    'paper': True,
 }
 
 testContext = {}

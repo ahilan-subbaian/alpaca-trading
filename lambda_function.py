@@ -5,14 +5,16 @@ import traderClient
 import logging
 
 load_dotenv()
-for handler in logging.getLogger().handlers:
-    logging.getLogger().removeHandler(handler)
-logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'),
-                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
-logger = logging.getLogger(__name__)
+
 
 
 def lambda_handler(event, context):
+
+    for handler in logging.getLogger().handlers:
+        logging.getLogger().removeHandler(handler)
+    logging.basicConfig(level=event['logging'],
+                        format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+    logger = logging.getLogger(__name__)
 
     logger.info(f"Event passed in {event}")
 
