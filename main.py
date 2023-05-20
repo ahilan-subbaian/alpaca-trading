@@ -17,5 +17,6 @@ testEvent = {
 
 testContext = {}
 
+print()
 print(lambda_handler(testEvent, testContext))
 print(f"\n\nTotal time: {time.time() - start}")

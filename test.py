@@ -1,15 +1,35 @@
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
 import os
-import logging
+from dotenv import load_dotenv
 
-# Set the environment variable before calling logging.basicConfig()
-os.environ['LOG_LEVEL'] = 'ERROR'  # Replace with your desired log level
+load_dotenv()
 
-# Retrieve the environment variable
-log_level = os.getenv('LOG_LEVEL', 'INFO')
+apiKey = os.getenv('API_KEY')
+secretKey = os.getenv('SECRET_KEY')
 
-# Configure logging
-logging.basicConfig(level=log_level)
+client = TradingClient(apiKey, secretKey, paper=True)
+tickers = ["RSP", "SCHD", "VONG"]
+assets = client.get_all_positions()
+ticker_assets = [{'ticker': i.symbol, 'value': i.market_value}
+                 for i in assets if i.symbol in tickers]
+investmentTotal = 1
+ticker_assets = [{'ticker': 'RSP', 'value': 50}, {
+    'ticker': 'SCHD', 'value': 65}, {'ticker': 'VONG', 'value': 60}, {'value': 55}, {'value': 90}]
+values = [i['value'] for i in ticker_assets]
+values.sort(reverse=True)
 
-# Log some messages
-logging.debug('This is a debug log message')
-logging.info('This is an info log message')
+total = sum(values) + investmentTotal
+for index, value in enumerate(values):
+    print(value, total / (len(values) - index))
+    if value > total / (len(values) - index):
+        total -= value
+    else:
+        print(total / (len(values) - index))
+        break
+
+
+# print(tickers)
+# print(assets)
+# print(ticker_assets)

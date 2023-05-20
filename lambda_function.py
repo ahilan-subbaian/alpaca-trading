@@ -29,7 +29,7 @@ def lambda_handler(event, context):
     client = traderClient.localClient(
         apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
 
-    response = client.execute()
+    response = client.execute_equal()
 
     if not response['result']:
         logger.error(
