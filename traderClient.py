@@ -20,17 +20,10 @@ def calculate_fridays(day_displace):
     today = datetime.datetime.now()
 
     # get displaced start date
-    displaced = datetime.datetime(today.year, today.month, day_displace)
-
-    # Calculate the end date (a month from today)
     end_date = datetime.datetime(
-        today.year, (today.month+1) % 12, today.day)
+        today.year, (today.month + (today.day >= day_displace)) % 12, day_displace)
 
-    current = fridays_between(today, end_date)
-    count = fridays_between(displaced, end_date)
-    diff = current - 1
-
-    return (current - diff) / (count - diff)
+    return 0 if (days := fridays_between(today, end_date)) == 0 else 1 / days
 
 
 class localClient:
@@ -71,20 +64,18 @@ class localClient:
         statuses = [self.client.get_order_by_id(
             order.id).status.lower() for order in orders]
 
-        completed = True
-        message = []
+        messages = []
 
         for ticker, status in zip(self.tickers, statuses):
             if status != 'filled':
-                message.append(
+                messages.append(
                     f"Order failed on {ticker} with status: {status}.")
-                completed = False
 
-        if completed:
+        if len(messages) > 0:
             result["result"] = True
             result["message"] = "Successfully completed all orders"
         else:
             result["result"] = False
-            result['message'] = ' '.join(message)
+            result['message'] = ' '.join(messages)
 
         return result

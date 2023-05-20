@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import json
 import traderClient
+import logging
 
 load_dotenv()
 
@@ -19,4 +20,11 @@ def lambda_handler(event, context):
 
     client = traderClient.localClient(
         apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
-    return client.execute()
+
+    response = client.execute()
+
+    if not response['result']:
+        logging.info(
+            f"[ERROR] traderClient.executeError: {response['message']}")
+
+    return response
