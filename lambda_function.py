@@ -7,7 +7,6 @@ import logging
 load_dotenv()
 
 
-
 def lambda_handler(event, context):
 
     for handler in logging.getLogger().handlers:
