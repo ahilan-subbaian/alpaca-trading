@@ -130,6 +130,7 @@ class localClient:
 
     def execute(self):
         result = {"result": False, "message": "All orders failed"}
+        logger.info("In localClient.execute()")
 
         dollarValue = self.investmentAmount()
         orders = self.placeAllOrders(dollarValue)
@@ -147,6 +148,7 @@ class localClient:
 
     def execute_equal(self):
         result = {"result": False, "message": "All orders failed"}
+        logger.info("In localClient.execute_equal()")
 
         dollarValue = self.equalInvestmentAmount()
         ceiling = self.calculateInvestment(dollarValue)
