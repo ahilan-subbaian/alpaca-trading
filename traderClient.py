@@ -16,9 +16,11 @@ class localClient:
         self.limit = limit
         self.timeout = timeout
 
+    # Retrieves all investments from Alpaca
     def get_investments(self):
         return self.client.get_all_positions()
 
+    # Gets the ratio of Fridays that exist between now and the next transfer date
     def fridayRatio(self):
         # Get today's date
         today = datetime.datetime.now()
@@ -27,12 +29,14 @@ class localClient:
         end_date = datetime.datetime(
             today.year, (today.month + (today.day >= self.displace)) % 12, self.displace)
 
+        # Finds the number of fridays from today to end date
         fridays = 0
         while today < end_date:
             if today.weekday() == 4:
                 fridays += 1
             today += datetime.timedelta(days=1)
 
+        # Division by 0 error and no month has more than 5 fridays
         if fridays <= 0 or fridays > 5:
             logger.error("Friday: {friday}, will be set to 0")
             return 0
@@ -40,6 +44,9 @@ class localClient:
         dollarValue = 1 / fridays
         return dollarValue
 
+    # Calcualtes the total investment amount of this run
+    # by comparing the amount by what is left in the account
+    # and the passed in limit
     def equalInvestmentAmount(self):
         dollarValue = self.fridayRatio() * self.get_cash()
 
@@ -48,6 +55,8 @@ class localClient:
 
         return min(dollarValue, self.limit)
 
+    # Calcaultes the amount that should be invested in each ticker
+    # grabing the cash in the account comapred to the limit
     def investmentAmount(self):
         dollarValue = self.fridayRatio() * self.get_cash()
         limit = self.limit / len(self.tickers)
@@ -57,15 +66,19 @@ class localClient:
 
         return min(dollarValue, limit)
 
+    # Get the cash amount in the account
     def get_cash(self):
         return float(self.client.get_account().cash)
 
+    # Creates a market order and returns the order details
     def marketBuyOrder(self, symbol, dollarValue):
         order = MarketOrderRequest(symbol=symbol, notional=dollarValue, side=OrderSide.BUY,
                                    time_in_force=TimeInForce.DAY)
         order_details = self.client.submit_order(order)
         return order_details
 
+    #  Place order for all tickers with the same dollarValue.
+    #  Terminates if dollar value passes the limit
     def placeAllOrders(self, dollarValue):
         orderInfos = []
         total = 0
@@ -76,7 +89,10 @@ class localClient:
             orderInfos.append(self.marketBuyOrder(ticker, dollarValue))
         return orderInfos
 
+    # Uses ceiling to calcualte the ammount that should
+    # be invested by all tickers
     def placeEqualOrders(self, ceiling):
+        # Calculate the amount to be invested in each stock
         assets = self.client.get_all_positions()
         values = []
         for i in assets:
@@ -86,6 +102,7 @@ class localClient:
 
         logger.info(f"Investing positions: {values}")
 
+        # Place order for each asset that is believe the ceiling
         orderInfos = []
         total = 0
         for position in values:
@@ -96,6 +113,7 @@ class localClient:
                 position['ticker'], position['invest']))
         return orderInfos
 
+    #  Calculates the ceiling to be invested on with
     def calculateInvestment(self, totalValue):
         assets = self.client.get_all_positions()
         values = [float(i.market_value)
@@ -115,12 +133,15 @@ class localClient:
             f"Ended beyond for loop in calculateInvestment, holdings: {values} and ceiling {ceiling}")
         return 0
 
+    # Checks to make sure that all orders were filled,
+    # returns a message holding all tickers that did not execute
     def getStatus(self, orders):
         statuses = [self.client.get_order_by_id(
             order.id).status.lower() for order in orders]
 
         messages = []
 
+        # Make sure all orders have been filled
         for ticker, status in zip(self.tickers, statuses):
             if status != 'filled':
                 messages.append(
@@ -128,6 +149,7 @@ class localClient:
 
         return messages
 
+    #  master command for even split execute
     def execute(self):
         result = {"result": False, "message": "All orders failed"}
         logger.info("In localClient.execute()")
@@ -146,6 +168,7 @@ class localClient:
 
         return result
 
+    # master command for equal weighting investments
     def execute_equal(self):
         result = {"result": False, "message": "All orders failed"}
         logger.info("In localClient.execute_equal()")

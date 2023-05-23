@@ -26,7 +26,7 @@ jobs:
 
       - name: Create Lambda deployment package
         run: |
-          zip -r deployment-package.zip .
+          zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore"
 
       - name: Deploy to AWS Lambda
         run: |

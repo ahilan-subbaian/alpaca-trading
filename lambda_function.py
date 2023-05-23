@@ -9,6 +9,8 @@ load_dotenv()
 
 def lambda_handler(event, context):
 
+    # Removes all configururations from the logger
+    # Sets logging configuration to "Time - Level - message"
     for handler in logging.getLogger().handlers:
         logging.getLogger().removeHandler(handler)
     logging.basicConfig(level=event['logging'],
@@ -26,6 +28,7 @@ def lambda_handler(event, context):
     timeout = event['timeout']
     paper = event['paper']
 
+    # Inititalize trading client
     client = traderClient.localClient(
         apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
 
