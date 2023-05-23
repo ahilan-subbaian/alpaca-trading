@@ -30,4 +30,5 @@ This code is meant to be hosted on an AWS Lambda instance and called by AWS Even
 3. Add AWS keys into Github secret keeper
 4. Create [AWS Lambda](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions)
 5. Create an [AWS CloudWatch Alarm](https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:?)
-6. Verify execution on [Alpaca](https://alpaca.markets/)
+6. Create an [AWS EventBridge Scheduler](https://us-east-1.console.aws.amazon.com/scheduler/home?region=us-east-1#schedules)
+7. Verify execution on [Alpaca](https://alpaca.markets/)
