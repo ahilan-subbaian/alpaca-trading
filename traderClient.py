@@ -33,8 +33,8 @@ class localClient:
                 fridays += 1
             today += datetime.timedelta(days=1)
 
-        if fridays == 0:
-            logger.error("Variable friday set to zero value")
+        if fridays <= 0 or fridays > 5:
+            logger.error("Friday: {friday}, will be set to 0")
             return 0
 
         dollarValue = 1 / fridays
@@ -42,6 +42,10 @@ class localClient:
 
     def equalInvestmentAmount(self):
         dollarValue = self.fridayRatio() * self.get_cash()
+
+        logger.info(
+            f"Investable cash by ratio: ${dollarValue:.2f} and investable cash by limit: ${self.limit}")
+
         return min(dollarValue, self.limit)
 
     def investmentAmount(self):
