@@ -3,33 +3,35 @@ from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 import os
 from dotenv import load_dotenv
+import datetime
+import traderClient
 
 load_dotenv()
 
-apiKey = os.getenv('API_KEY')
-secretKey = os.getenv('SECRET_KEY')
 
-client = TradingClient(apiKey, secretKey, paper=True)
-tickers = ["RSP", "SCHD", "VONG"]
-assets = client.get_all_positions()
-ticker_assets = [{'ticker': i.symbol, 'value': i.market_value}
-                 for i in assets if i.symbol in tickers]
-investmentTotal = 1
-ticker_assets = [{'ticker': 'RSP', 'value': 50}, {
-    'ticker': 'SCHD', 'value': 65}, {'ticker': 'VONG', 'value': 60}, {'value': 55}, {'value': 90}]
-values = [i['value'] for i in ticker_assets]
-values.sort(reverse=True)
+def fridayRatio(displace):
+    # Get today's date
+    today = datetime.datetime.now()
 
-total = sum(values) + investmentTotal
-for index, value in enumerate(values):
-    print(value, total / (len(values) - index))
-    if value > total / (len(values) - index):
-        total -= value
-    else:
-        print(total / (len(values) - index))
-        break
+    # get displaced start date
+    end_date = datetime.datetime(
+        today.year, (today.month + (today.day >= displace)) % 12, displace)
+
+    # Finds the number of fridays from today to end date
+    fridays = 0
+    while today < end_date:
+        if today.weekday() == 4:
+            fridays += 1
+        today += datetime.timedelta(days=1)
+
+    # Division by 0 error and no month has more than 5 fridays
+    if fridays <= 0 or fridays > 5:
+        # logger.error("Friday: {friday}, will be set to 0")
+        return 0
+
+    invest_ratio = 1 / fridays
+    return invest_ratio
 
 
-# print(tickers)
-# print(assets)
-# print(ticker_assets)
+for i in range(1, 31):
+    print(f"Shift: {i}, number of fridays {fridayRatio(i)}")

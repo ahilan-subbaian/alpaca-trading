@@ -41,8 +41,8 @@ class localClient:
             logger.error("Friday: {friday}, will be set to 0")
             return 0
 
-        dollarValue = 1 / fridays
-        return dollarValue
+        invest_ratio = 1 / fridays
+        return invest_ratio
 
     # Calcualtes the total investment amount of this run
     # by comparing the amount by what is left in the account
