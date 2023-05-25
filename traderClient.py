@@ -1,6 +1,6 @@
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import MarketOrderRequest
-from alpaca.trading.enums import OrderSide, TimeInForce
+from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
+from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderStatus
 import datetime
 import time
 import logging
@@ -23,19 +23,88 @@ class localClient:
         self.tickers = tickers
         self.limit = limit
         self.timeout = timeout
+        self.traded = 0
 
     # Routes the caller to the specified execute type
-    def handler(self):
+    def handler(self, prior_trades=False):
+        result = {"result": False, "message": "Handler failed"}
+
         today = datetime.datetime.now()
+
+        traded = self.prior_orders()
+        logger.info(f"Traded: {traded}")
+        if traded < 0:
+            result["message"] = "Odd order recieved"
+            return result
+        # elif traded > self.limit * .95:
+        #     result["message"] = f"Traded <{traded}> is near the limit <{self.limit}>."
+        #     return result
+
+        if prior_trades:
+            self.traded = traded
 
         # Rebalancing occurs once every quarter
         if today.month % 3 == 0 and today.day < 8:
-            return self.equal_execute()
+            result = self.equal_execute()
         else:
-            return self.split_execute()
+            result = self.split_execute()
+
+        if result["result"] == False:
+            return result
+
+        trading_check = self.prior_orders()
+        if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
+            result["result"] = False
+            result["message"] = f"Traded <{trading_check}> which is over the limit <{self.limit}>"
+            return result
+
+        return result
+
+    # Checks the orders placed in the last week to minimize over trading in one week
+
+    def prior_orders(self):
+
+        order_params = GetOrdersRequest(
+            status=QueryOrderStatus.CLOSED,
+            after=datetime.datetime.now() - datetime.timedelta(days=6),
+            side=OrderSide.BUY,
+        )
+
+        orders = self.client.get_orders(order_params)
+        traded = 0
+
+        for order in orders:
+            if order.status == OrderStatus.CANCELED:
+                if order.notional != None:
+                    logger.info(
+                        f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, notional <{float(order.notional):.2f}>")
+                elif order.qty != None:
+                    logger.info(
+                        f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, notional <{float(order.qty):.2f}>")
+                else:
+                    logger.error(
+                        f"Odd ordered processed: order id <{order.id}>")
+                    return -1
+            elif order.status == OrderStatus.FILLED:
+                if order.notional != None:
+                    logger.info(
+                        f"Order placed for {order.symbol} for ${float(order.notional):.2f}.")
+                    traded += float(order.notional)
+                elif order.qty != None:
+                    logger.info(
+                        f"Order placed for {order.symbol} for {float(order.qty):.2f} shares.")
+                    traded += float(order.qty) * \
+                        float(order.filled_avg_price)
+                else:
+                    logger.error(
+                        f"Odd ordered processed: order id <{order.id}>")
+                    return -1
+
+        return traded
 
     # Split Execute
     # Invests the same ammount in each ticker
+
     def split_execute(self):
         result = {"result": False, "message": "All orders failed"}
         logger.info("In localClient.split_execute()")
@@ -48,7 +117,7 @@ class localClient:
 
         purchase_power = self.purchase_power(ratio, Execute.SPLIT)
         logger.info(f"Purchase Power: {purchase_power}")
-        if purchase_power == 0:
+        if purchase_power <= 0:
             result["message"] = "Failed in retrieving purchase_power"
             return result
 
@@ -90,7 +159,7 @@ class localClient:
 
         purchase_power = self.purchase_power(ratio, Execute.EQUAL)
         logger.info(f"Purchase Power: {purchase_power}")
-        if purchase_power == 0:
+        if purchase_power <= 0:
             result["message"] = "Failed in retrieving purchase_power"
             return result
 
@@ -156,7 +225,14 @@ class localClient:
         order_details = self.client.submit_order(order)
         return order_details
 
+    def get_position_value(self, ticker):
+        try:
+            return float(self.client.get_open_position(ticker).market_value)
+        except:
+            return 0
+
     # Calculates the intended investments for each ticker
+
     def investments(self, limit, execute):
         if execute not in Execute:
             logger.error(f"Execute type does not exist: {execute}")
@@ -166,11 +242,9 @@ class localClient:
 
         # if market value is below limit, add ticker to investments
         if execute == Execute.EQUAL:
-            assets = self.client.get_all_positions()
-            for asset in assets:
-                if asset.symbol in self.tickers and float(asset.market_value) < limit:
-                    investments[asset.symbol] = limit - \
-                        float(asset.market_value)
+            for ticker in self.tickers:
+                investments[ticker] = max(
+                    0, limit - self.get_position_value(ticker))
             return investments
 
         # Adds all tickers to investments with
@@ -187,9 +261,8 @@ class localClient:
     # Finds the ceiling using averaging math
     # the ceiling is the value all investments should be at minimum
     def ceiling(self, purchase_power):
-        assets = self.client.get_all_positions()
-        asset_values = [float(i.market_value)
-                        for i in assets if i.symbol in self.tickers]
+        asset_values = [self.get_position_value(
+            ticker) for ticker in self.tickers]
         asset_values.sort(reverse=True)
 
         total = sum(asset_values) + purchase_power
@@ -210,7 +283,7 @@ class localClient:
     def purchase_power(self, ratio, execute):
         account_cash = self.get_cash()
         limit = account_cash * ratio
-        return min(limit, self.limit)
+        return min(limit, self.limit - self.traded)
 
     # Get the cash amount in the account
     def get_cash(self):

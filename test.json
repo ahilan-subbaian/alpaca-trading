@@ -1,0 +1,9 @@
+{
+    "tickers": ["VONG", "SCHD", "SCHG", "SPGP", "RSP"],
+    "limit": 50,
+    "displace": 5,
+    "timeout": 10,
+    "logging": "INFO",
+    "paper": true,
+    "prior_trades": true
+}

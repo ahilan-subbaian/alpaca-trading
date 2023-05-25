@@ -27,12 +27,14 @@ def lambda_handler(event, context):
     displace = event['displace']
     timeout = event['timeout']
     paper = event['paper']
+    prior_trades = event.get('prior_trades', False)
 
     # Inititalize trading client
     client = traderClient.localClient(
         apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
 
-    response = client.equal_execute()
+    # response = client.equal_execute()
+    response = client.handler(prior_trades=prior_trades)
 
     if not response['result']:
         logger.error(
@@ -41,13 +43,13 @@ def lambda_handler(event, context):
         logger.info(
             f"Response message: {response['message']}")
 
-    response = client.split_execute()
+    # response = client.split_execute()
 
-    if not response['result']:
-        logger.error(
-            f"Response message: {response['message']}")
-    else:
-        logger.info(
-            f"Response message: {response['message']}")
+    # if not response['result']:
+    #     logger.error(
+    #         f"Response message: {response['message']}")
+    # else:
+    #     logger.info(
+    #         f"Response message: {response['message']}")
 
     return response
