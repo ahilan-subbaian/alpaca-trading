@@ -5,6 +5,7 @@ import datetime
 import time
 import logging
 from enum import Enum
+from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +30,19 @@ class localClient:
     def handler(self, prior_trades=False):
         result = {"result": False, "message": "Handler failed"}
 
-        today = datetime.datetime.now()
-
         traded = self.prior_orders()
         logger.info(f"Traded: {traded}")
         if traded < 0:
             result["message"] = "Odd order recieved"
             return result
-        # elif traded > self.limit * .95:
-        #     result["message"] = f"Traded <{traded}> is near the limit <{self.limit}>."
-        #     return result
+        elif traded > self.limit * .95:
+            result["message"] = f"Traded <{traded}> is near the limit <{self.limit}>."
+            return result
 
         if prior_trades:
             self.traded = traded
+
+        today = datetime.datetime.now()
 
         # Rebalancing occurs once every quarter
         if today.month % 3 == 0 and today.day < 8:
@@ -55,7 +56,7 @@ class localClient:
         trading_check = self.prior_orders()
         if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
             result["result"] = False
-            result["message"] = f"Traded <{trading_check}> which is over the limit <{self.limit}>"
+            result["message"] = f"Traded <{trading_check:.2f}> which is not equal to the limit <{self.limit:.2f}>"
             return result
 
         return result
@@ -115,7 +116,7 @@ class localClient:
             result['message'] = "Failed in retrieving ratio"
             return result
 
-        purchase_power = self.purchase_power(ratio, Execute.SPLIT)
+        purchase_power = self.purchase_power(ratio)
         logger.info(f"Purchase Power: {purchase_power}")
         if purchase_power <= 0:
             result["message"] = "Failed in retrieving purchase_power"
@@ -157,7 +158,7 @@ class localClient:
             result['message'] = "Failed in retrieving ratio"
             return result
 
-        purchase_power = self.purchase_power(ratio, Execute.EQUAL)
+        purchase_power = self.purchase_power(ratio)
         logger.info(f"Purchase Power: {purchase_power}")
         if purchase_power <= 0:
             result["message"] = "Failed in retrieving purchase_power"
@@ -197,9 +198,6 @@ class localClient:
     # Checks to make sure that all orders were filled,
     # returns a message holding all tickers that did not execute
     def get_status(self, orders):
-        statuses = [self.client.get_order_by_id(
-            order.id).status.lower() for order in orders]
-
         messages = []
 
         # Make sure all orders have been filled
@@ -214,8 +212,16 @@ class localClient:
     # Places order for each {ticker: amount} in parameters
     def place_orders(self, investments):
         orders = []
+
+        total_invested = 0
         for symbol, amount in investments.items():
-            orders.append(self.marketBuyOrder(symbol, amount))
+            total_invested += amount
+            if total_invested > (self.limit - self.traded) * 1.05:
+                logger.error(
+                    f"Investing {total_invested} which is over the limit <{self.limit}> - traded <{self.traded}>.")
+            if amount > 0:
+                orders.append(self.marketBuyOrder(symbol, amount))
+
         return orders
 
     # Creates a market order and returns the order details
@@ -223,6 +229,7 @@ class localClient:
         order = MarketOrderRequest(symbol=symbol, notional=amount, side=OrderSide.BUY,
                                    time_in_force=TimeInForce.DAY)
         order_details = self.client.submit_order(order)
+        logger.info(f"Placed an order for {symbol} with ${amount}.")
         return order_details
 
     def get_position_value(self, ticker):
@@ -280,7 +287,7 @@ class localClient:
         return 0
 
     # Finds the amount that will be in
-    def purchase_power(self, ratio, execute):
+    def purchase_power(self, ratio):
         account_cash = self.get_cash()
         limit = account_cash * ratio
         return min(limit, self.limit - self.traded)
@@ -296,7 +303,7 @@ class localClient:
 
         # get displaced start date
         end_date = datetime.datetime(
-            today.year, (today.month + (today.day >= self.displace)) % 12, self.displace)
+            today.year, today.month, self.displace) + (relativedelta(months=1) if today.day >= self.displace else relativedelta())
 
         # Finds the number of fridays from today to end date
         fridays = 0
