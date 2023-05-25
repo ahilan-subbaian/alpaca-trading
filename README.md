@@ -15,13 +15,18 @@ This code is meant to be hosted on an AWS Lambda instance and called by AWS Even
 ```json
 {
   "tickers": ["VONG", "SCHD", "SCHG", "SPGP", "RSP"],
-  "limit": 100, # Total amount that will be invested
-  "displace": 5, # Day of the month that money is trasnfered
-  "timeout": 60, # How long to wait to check status
+  "limit": 50,
+  "displace": 5,
+  "timeout": 10,
   "logging": "INFO",
-  "paper": false
+  "paper": true,
+  "prior_trades": true
 }
 ```
+
+limit: Total amount that will be invested  
+displace: Day of the month that money is transfered  
+timeout: How long to wait to check status
 
 ## Recreating
 
