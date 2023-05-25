@@ -3,7 +3,7 @@ from lambda_function import *
 import time
 import json
 
-file_path = "test.json"
+file_path = "event.json"
 with open(file_path, "r") as json_file:
     testEvent = json.load(json_file)
 testContext = {}

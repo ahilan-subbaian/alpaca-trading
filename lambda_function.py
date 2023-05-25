@@ -33,7 +33,6 @@ def lambda_handler(event, context):
     client = traderClient.localClient(
         apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
 
-    # response = client.equal_execute()
     response = client.handler(prior_trades=prior_trades)
 
     if not response['result']:
@@ -42,14 +41,5 @@ def lambda_handler(event, context):
     else:
         logger.info(
             f"Response message: {response['message']}")
-
-    # response = client.split_execute()
-
-    # if not response['result']:
-    #     logger.error(
-    #         f"Response message: {response['message']}")
-    # else:
-    #     logger.info(
-    #         f"Response message: {response['message']}")
 
     return response
