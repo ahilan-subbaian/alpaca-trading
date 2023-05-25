@@ -8,7 +8,7 @@ This code is meant to be hosted on an AWS Lambda instance and called by AWS Even
 
 ## Workflow
 
-![Sample Document](./workflow.jpg)
+![](./images/workflow.jpg)
 
 ## Configuration
 
@@ -27,6 +27,10 @@ This code is meant to be hosted on an AWS Lambda instance and called by AWS Even
 limit: Total amount that will be invested  
 displace: Day of the month that money is transfered  
 timeout: How long to wait to check status
+
+## Codeflow
+
+![](./images/codeflow.jpg)
 
 ## Recreating
 
