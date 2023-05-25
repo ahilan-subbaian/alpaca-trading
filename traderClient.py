@@ -235,7 +235,8 @@ class localClient:
     def get_position_value(self, ticker):
         try:
             return float(self.client.get_open_position(ticker).market_value)
-        except:
+        except Exception as e:
+            logger.info(f"Unable to get market value for {ticker}")
             return 0
 
     # Calculates the intended investments for each ticker
