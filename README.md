@@ -38,6 +38,23 @@ timeout: How long to wait to check status
 2. Create AWS account
 3. Add AWS keys into Github secret keeper
 4. Create [AWS Lambda](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions)
-5. Create an [AWS CloudWatch Alarm](https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:?)
-6. Create an [AWS EventBridge Scheduler](https://us-east-1.console.aws.amazon.com/scheduler/home?region=us-east-1#schedules)
-7. Verify execution on [Alpaca](https://alpaca.markets/)
+
+   - Add keys into configuration
+   - Add layers (python libraries)
+   - Verify lambda_function name and handler
+
+5. Create metric [AWS CloudWatch Metric](https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#metricsV2:)
+
+   - Track every occurance of "ERROR"
+
+6. Create an [AWS CloudWatch Alarm](https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:?)
+
+   - Calculate on sum over 0
+   - Set missing data as good
+   - Set notifications to email
+
+7. Create an [AWS EventBridge Scheduler](https://us-east-1.console.aws.amazon.com/scheduler/home?region=us-east-1#schedules)
+
+   - Input target payload from event.json
+
+8. Verify execution on [Alpaca](https://alpaca.markets/)
