@@ -20,19 +20,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt -t .
-
       - name: Create Lambda deployment package
         run: |
           zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore"
-
-      - name: Deploy to AWS Lambda AlpacaTrading
-        run: |
-          aws lambda update-function-code \
-            --function-name alpacaTrading \
-            --zip-file fileb://deployment-package.zip
 
       - name: Deploy to AWS Lambda AlpacaTradingStatus
         run: |
