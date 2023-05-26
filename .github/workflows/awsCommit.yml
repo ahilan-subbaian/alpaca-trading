@@ -24,6 +24,12 @@ jobs:
         run: |
           zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore"
 
+      - name: Deploy to AWS Lambda AlpacaTrading
+        run: |
+          aws lambda update-function-code \
+            --function-name alpacaTrading \
+            --zip-file fileb://deployment-package.zip
+
       - name: Deploy to AWS Lambda AlpacaTradingStatus
         run: |
           aws lambda update-function-code \
