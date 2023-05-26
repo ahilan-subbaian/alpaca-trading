@@ -63,11 +63,11 @@ class localClient:
 
     # Checks the orders placed in the last week to minimize over trading in one week
 
-    def prior_orders(self):
+    def prior_orders(self, days=6):
 
         order_params = GetOrdersRequest(
             status=QueryOrderStatus.CLOSED,
-            after=datetime.datetime.now() - datetime.timedelta(days=6),
+            after=datetime.datetime.now() - datetime.timedelta(days=days),
             side=OrderSide.BUY,
         )
 
