@@ -1,3 +1,5 @@
+import pandas as pd
+import pandas_market_calendars as mcal
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, OrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
@@ -13,27 +15,22 @@ logging.basicConfig(level='INFO',
 load_dotenv()
 
 
-apiKey = os.getenv('API_KEY')
-secretKey = os.getenv('SECRET_KEY')
+def is_market_open():
+    # Get the NYSE calendar
+    nyse = mcal.get_calendar('NYSE')
 
-client = traderClient.localClient(apiKey, secretKey, 100, [
-                                  "VONG", "SCHD", "SCHG", "SPGP", "RSP"], 5, 10, paper=True)
-print(client.prior_orders())
-print(client.traded)
+    # Get today's date
+    start = end = datetime.datetime.now().date()
 
-# request_params = GetOrdersRequest(
-#     status=QueryOrderStatus.CLOSED,
-#     after=datetime.datetime.now() - datetime.timedelta(days=7),
-#     side=OrderSide.BUY,
-# )
+    while end.weekday() != 4:
+        end += datetime.timedelta(days=1)
 
-# client = TradingClient(apiKey, secretKey, paper=True)
-# orders = client.get_orders(request_params)
+    # Get market schedule for today
+    market_schedule = nyse.valid_days(
+        start_date=start, end_date=end)
 
-# for order in orders:
-#     if order.status == OrderStatus.CANCELED:
-#         print(
-#             f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, "
-#             f"notional <{order.notional}>, quantity <{order.qty}>")
-#     else:
-#         print("The order was not canceled")
+    # check if the last available date is today
+    return not market_schedule.empty and market_schedule[-1].to_pydatetime().date() == start
+
+
+print(is_market_open())

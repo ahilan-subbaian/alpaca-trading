@@ -1,3 +1,4 @@
+import pandas as pd
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderStatus
@@ -6,6 +7,7 @@ import time
 import logging
 from enum import Enum
 from dateutil.relativedelta import relativedelta
+import pandas_market_calendars as mcal
 
 logger = logging.getLogger(__name__)
 
@@ -27,20 +29,20 @@ class localClient:
         self.traded = 0
 
     # Routes the caller to the specified execute type
-    def handler(self, prior_trades=False):
+    def handler(self):
         result = {"result": False, "message": "Handler failed"}
 
-        traded = self.prior_orders()
-        logger.info(f"Traded: {traded}")
-        if traded < 0:
-            result["message"] = "Odd order recieved"
-            return result
-        elif traded > self.limit * .95:
-            result["message"] = f"Traded <{traded}> is near the limit <{self.limit}>."
+        is_open = self.is_market_open()
+        logger.info(f"The market is {'open' if is_open else 'closed'} today.")
+        if not is_open:
+            result["message"] = f"The market is {'open' if is_open else 'closed'} today."
             return result
 
-        if prior_trades:
-            self.traded = traded
+        self.traded = self.prior_orders()
+        logger.info(f"Traded: {self.traded}")
+        if self.traded < 0 or self.traded > self.limit * .95:
+            result["message"] = f"Traded <{self.traded}> which is out of expected range."
+            return result
 
         today = datetime.datetime.now()
 
@@ -56,10 +58,28 @@ class localClient:
         trading_check = self.prior_orders()
         if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
             result["result"] = False
-            result["message"] = f"Traded <{trading_check:.2f}> which is not equal to the limit <{self.limit:.2f}>"
+            result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
 
         return result
+
+    # check if today is when the market is open
+    def is_market_open(self):
+        # Get the NYSE calendar
+        nyse = mcal.get_calendar('NYSE')
+
+        # Get today's date
+        start = end = datetime.datetime.now().date()
+
+        while end.weekday() != 4:
+            end += datetime.timedelta(days=1)
+
+        # Get market schedule for today
+        market_schedule = nyse.valid_days(
+            start_date=start, end_date=end)
+
+        # check if the last available date is today
+        return not market_schedule.empty and market_schedule[-1].to_pydatetime().date() == start
 
     # Checks the orders placed in the last week to minimize over trading in one week
 
