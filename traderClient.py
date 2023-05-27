@@ -1,4 +1,3 @@
-import pandas as pd
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest, GetCalendarRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderStatus
@@ -7,7 +6,6 @@ import time
 import logging
 from enum import Enum
 from dateutil.relativedelta import relativedelta
-import pandas_market_calendars as mcal
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +33,7 @@ class localClient:
         is_open = self.is_market_open()
         logger.info(f"The market is {'open' if is_open else 'closed'}.")
         if not is_open:
+            result["result"] = True
             result["message"] = f"The market is {'open' if is_open else 'closed'}."
             return result
 
