@@ -3,7 +3,7 @@ name: Deploy to AWS Lambda Dev
 on:
   push:
     branches:
-      - main # Replace with your main branch name
+      - dev # Replace with your main branch name
 
 jobs:
   deploy:
