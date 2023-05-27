@@ -110,7 +110,7 @@ class localClient:
 
         calendar = GetCalendarRequest(start=start, end=end)
         calendar = self.client.get_calendar(calendar)
-        return calendar[-1].date == start
+        return len(calendar) > 0 and calendar[-1].date == start
 
     # Checks the orders placed in the last week to minimize over trading in one week
 
