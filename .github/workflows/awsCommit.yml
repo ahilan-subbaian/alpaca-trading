@@ -24,14 +24,14 @@ jobs:
         run: |
           zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore" "images/*" "event.json" "main_status.py"
 
-      - name: Deploy to AWS Lambda AlpacaTrading
+      - name: Deploy to AWS Lambda alpaca_orders_func_PROD
         run: |
           aws lambda update-function-code \
-            --function-name alpacaTrading \
+            --function-name alpaca_orders_func_PROD \
             --zip-file fileb://deployment-package.zip
 
-      - name: Deploy to AWS Lambda AlpacaTradingStatus
+      - name: Deploy to AWS Lambda alpaca_status_func
         run: |
           aws lambda update-function-code \
-            --function-name alpacaTradingStatus \
+            --function-name alpaca_status_func \
             --zip-file fileb://deployment-package.zip
