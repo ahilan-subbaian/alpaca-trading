@@ -30,6 +30,15 @@ class localClient:
     def handler(self):
         result = {"result": False, "message": "Handler failed"}
 
+        today = datetime.datetime.now()
+
+        # Rebalancing occurs once every quarter
+        if today.month % 3 == 0 and today.day < 8:
+            execute = Execute.EQUAL
+        else:
+            execute = Execute.SPLIT
+        logger.info(f"Will be executing as {execute}.")
+
         is_open = self.is_market_open()
         logger.info(f"The market is {'open' if is_open else 'closed'}.")
         if not is_open:
@@ -43,15 +52,42 @@ class localClient:
             result["message"] = f"Traded <{self.traded}> which is out of expected range."
             return result
 
-        today = datetime.datetime.now()
+        ratio = self.fridayRatio()
+        logger.info(f"Ratio: {ratio}")
+        if ratio == 0:
+            result['message'] = "Failed in retrieving ratio"
+            return result
 
-        # Rebalancing occurs once every quarter
-        if today.month % 3 == 0 and today.day < 8:
-            result = self.equal_execute()
-        else:
-            result = self.split_execute()
+        purchase_power = self.purchase_power(ratio)
+        logger.info(f"Purchase Power: {purchase_power}")
+        if purchase_power <= 0:
+            result["message"] = "Failed in retrieving purchase_power"
+            return result
 
-        if result["result"] == False:
+        ceiling = self.ceiling(purchase_power, execute)
+        logger.info(f"Ceiling: {ceiling:.2f}")
+        if ceiling == 0:
+            result["message"] = "Failed in retrieving ceiling"
+            return result
+
+        investments = self.investments(purchase_power, execute)
+        logger.info(f"Investments: {investments}")
+        if len(investments) == 0 or any([i not in self.tickers for i in investments]):
+            result["message"] = "Failed in retrieving investments"
+            return result
+
+        orders = self.place_orders(investments)
+        logger.info(f"Number of orders: {len(orders)}")
+        if len(orders) == 0:
+            result["message"] = "Failed in retrieving orders"
+            return result
+
+        time.sleep(self.timeout)
+
+        messages = self.get_status(orders)
+        logger.info(f"Messages: {messages}")
+        if len(messages) > 0:
+            result["message"] = ' '.join(messages)
             return result
 
         trading_check = self.prior_orders()
@@ -59,6 +95,9 @@ class localClient:
             result["result"] = False
             result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
+
+        result["message"] = "Successfully completed all orders"
+        result["result"] = True
 
         return result
 
@@ -118,98 +157,6 @@ class localClient:
                 return self.limit
 
         return traded
-
-    # Split Execute
-    # Invests the same ammount in each ticker
-
-    def split_execute(self):
-        result = {"result": False, "message": "All orders failed"}
-        logger.info("In localClient.split_execute()")
-
-        ratio = self.fridayRatio()
-        logger.info(f"Ratio: {ratio}")
-        if ratio == 0:
-            result['message'] = "Failed in retrieving ratio"
-            return result
-
-        purchase_power = self.purchase_power(ratio)
-        logger.info(f"Purchase Power: {purchase_power}")
-        if purchase_power <= 0:
-            result["message"] = "Failed in retrieving purchase_power"
-            return result
-
-        investments = self.investments(purchase_power, Execute.SPLIT)
-        logger.info(f"Investments: {investments}")
-        if len(investments) == 0 or any([i not in self.tickers for i in investments]):
-            result["message"] = "Failed in retrieving investments"
-            return result
-
-        orders = self.place_orders(investments)
-        logger.info(f"Number of orders: {len(orders)}")
-        if len(orders) == 0:
-            result["message"] = "Failed in retrieving orders"
-            return result
-
-        time.sleep(self.timeout)
-
-        messages = self.get_status(orders)
-        logger.info(f"Messages: {messages}")
-        if len(messages) > 0:
-            result["message"] = ' '.join(messages)
-            return result
-
-        result["message"] = "Successfully completed all orders"
-        result["result"] = True
-        return result
-
-    # Equal Execute
-    # Rebalances the portfolio, all stocks tend towards equal value
-    def equal_execute(self):
-        result = {"result": False, "message": "All orders failed"}
-        logger.info("In localClient.equal_execute()")
-
-        ratio = self.fridayRatio()
-        logger.info(f"Ratio: {ratio}")
-        if ratio == 0:
-            result['message'] = "Failed in retrieving ratio"
-            return result
-
-        purchase_power = self.purchase_power(ratio)
-        logger.info(f"Purchase Power: {purchase_power}")
-        if purchase_power <= 0:
-            result["message"] = "Failed in retrieving purchase_power"
-            return result
-
-        ceiling = self.ceiling(purchase_power, Execute.EQUAL)
-        logger.info(f"Ceiling: {ceiling:.2f}")
-        if ceiling == 0:
-            result["message"] = "Failed in retrieving ceiling"
-            return result
-
-        investments = self.investments(ceiling, Execute.EQUAL)
-        logger.info(
-            f"Investments: {({key: f'{value:.2f}' for key, value in investments.items()})}")
-        if len(investments) == 0 or any([i not in self.tickers for i in investments]):
-            result["message"] = "Failed in retrieving investments"
-            return result
-
-        orders = self.place_orders(investments)
-        logger.info(f"Number of orders: {len(orders)}")
-        if len(orders) == 0:
-            result["message"] = "Failed in retrieving orders"
-            return result
-
-        time.sleep(self.timeout)
-
-        messages = self.get_status(orders)
-        logger.info(f"Messages: {messages}")
-        if len(messages) > 0:
-            result["message"] = ' '.join(messages)
-            return result
-
-        result["message"] = "Successfully completed all orders"
-        result["result"] = True
-        return result
 
     # Checks to make sure that all orders were filled,
     # returns a message holding all tickers that did not execute

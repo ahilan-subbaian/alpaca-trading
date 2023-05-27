@@ -7,24 +7,32 @@ from dotenv import load_dotenv
 import datetime
 import traderClient
 import logging
+from enum import Enum
 logging.basicConfig(level='INFO',
                     format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 load_dotenv()
 
 
-apiKey = os.getenv('API_KEY_PAPER')
-secretKey = os.getenv('SECRET_KEY_PAPER')
+class Execute(Enum):
+    EQUAL = 0
+    SPLIT = 1
 
-client = traderClient.localClient(apiKey, secretKey, 100, [
-                                  "VONG", "SCHD", "SCHG", "SPGP", "RSP"], 5, 10, paper=True)
 
-start = end = datetime.datetime.now().date()
+print(f"print the enum: {Execute.EQUAL}")
 
-while end.weekday() != 4:
-    end += datetime.timedelta(days=1)
+# apiKey = os.getenv('API_KEY_PAPER')
+# secretKey = os.getenv('SECRET_KEY_PAPER')
 
-calendar = GetCalendarRequest(start=start, end=end)
-calendar = client.client.get_calendar(calendar)
+# client = traderClient.localClient(apiKey, secretKey, 100, [
+#                                   "VONG", "SCHD", "SCHG", "SPGP", "RSP"], 5, 10, paper=True)
 
-print(calendar[-1].date == start)
+# start = end = datetime.datetime.now().date()
+
+# while end.weekday() != 4:
+#     end += datetime.timedelta(days=1)
+
+# calendar = GetCalendarRequest(start=start, end=end)
+# calendar = client.client.get_calendar(calendar)
+
+# print(calendar[-1].date == start)
