@@ -180,7 +180,7 @@ class localClient:
             result["message"] = "Failed in retrieving purchase_power"
             return result
 
-        ceiling = self.ceiling(purchase_power)
+        ceiling = self.ceiling(purchase_power, Execute.EQUAL)
         logger.info(f"Ceiling: {ceiling:.2f}")
         if ceiling == 0:
             result["message"] = "Failed in retrieving ceiling"
@@ -284,26 +284,38 @@ class localClient:
 
     # Finds the ceiling using averaging math
     # the ceiling is the value all investments should be at minimum
-    def ceiling(self, purchase_power):
-        asset_values = [self.get_position_value(
-            ticker) for ticker in self.tickers]
-        asset_values.sort(reverse=True)
+    def ceiling(self, purchase_power, execute):
+        if execute not in Execute:
+            logger.error(f"Execute type does not exist: {execute}")
+            return 0
 
-        total = sum(asset_values) + purchase_power
-        for index, value in enumerate(asset_values):
-            ceiling = total / (len(asset_values) - index)
-            if value > ceiling:
-                total -= value
-            else:
-                logger.info(
-                    f"Holding values: {[f'{value:.2f}' for value in asset_values]} and ceiling: {ceiling}")
-                return ceiling
+        if execute == Execute.EQUAL:
+            asset_values = [self.get_position_value(
+                ticker) for ticker in self.tickers]
+            asset_values.sort(reverse=True)
 
-        logger.error(
-            f"Ended beyond for loop in calculateInvestment, holdings: {[f'{value:.2f}' for value in asset_values]} and ceiling {ceiling}")
-        return 0
+            total = sum(asset_values) + purchase_power
+            for index, value in enumerate(asset_values):
+                ceiling = total / (len(asset_values) - index)
+                if value > ceiling:
+                    total -= value
+                else:
+                    logger.info(
+                        f"Holding values: {[f'{value:.2f}' for value in asset_values]} and ceiling: {ceiling}")
+                    return ceiling
+
+            logger.error(
+                f"Ended beyond for loop in calculateInvestment, holdings: {[f'{value:.2f}' for value in asset_values]} and ceiling {ceiling}")
+            return 0
+
+        if execute == Execute.SPLIT:
+            return purchase_power
+
+        logger.error(f"Did not find execute: {execute}")
+        return {}
 
     # Finds the amount that will be in
+
     def purchase_power(self, ratio):
         account_cash = self.get_cash()
         limit = account_cash * ratio
