@@ -35,7 +35,7 @@ def lambda_handler(event, context):
 
     traded = client.prior_orders(days=7)
 
-    if traded > limit * 1.05:
+    if traded > limit * .95:
         logger.error(f"Traded <{traded}> over the limit <{limit}>.")
         return {"result": False}
     else:
