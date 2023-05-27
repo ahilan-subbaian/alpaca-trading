@@ -1,7 +1,5 @@
-import pandas as pd
-import pandas_market_calendars as mcal
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import MarketOrderRequest, OrderRequest, GetOrdersRequest
+from alpaca.trading.requests import MarketOrderRequest, OrderRequest, GetOrdersRequest, GetCalendarRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 from alpaca.trading.enums import OrderSide, QueryOrderStatus, OrderStatus
 import os
@@ -15,22 +13,18 @@ logging.basicConfig(level='INFO',
 load_dotenv()
 
 
-def is_market_open():
-    # Get the NYSE calendar
-    nyse = mcal.get_calendar('NYSE')
+apiKey = os.getenv('API_KEY_PAPER')
+secretKey = os.getenv('SECRET_KEY_PAPER')
 
-    # Get today's date
-    start = end = datetime.datetime.now().date()
+client = traderClient.localClient(apiKey, secretKey, 100, [
+                                  "VONG", "SCHD", "SCHG", "SPGP", "RSP"], 5, 10, paper=True)
 
-    while end.weekday() != 4:
-        end += datetime.timedelta(days=1)
+start = end = datetime.datetime.now().date()
 
-    # Get market schedule for today
-    market_schedule = nyse.valid_days(
-        start_date=start, end_date=end)
+while end.weekday() != 4:
+    end += datetime.timedelta(days=1)
 
-    # check if the last available date is today
-    return not market_schedule.empty and market_schedule[-1].to_pydatetime().date() == start
+calendar = GetCalendarRequest(start=start, end=end)
+calendar = client.client.get_calendar(calendar)
 
-
-print(is_market_open())
+print(calendar[-1].date == start)

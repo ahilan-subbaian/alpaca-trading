@@ -1,6 +1,6 @@
 import pandas as pd
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
+from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest, GetCalendarRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderStatus
 import datetime
 import time
@@ -33,9 +33,9 @@ class localClient:
         result = {"result": False, "message": "Handler failed"}
 
         is_open = self.is_market_open()
-        logger.info(f"The market is {'open' if is_open else 'closed'} today.")
-        if not is_open:
-            result["message"] = f"The market is {'open' if is_open else 'closed'} today."
+        logger.info(f"The market is {'open' if is_open else 'closed'}.")
+        if is_open:
+            result["message"] = f"The market is {'open' if is_open else 'closed'}."
             return result
 
         self.traded = self.prior_orders()
@@ -63,23 +63,16 @@ class localClient:
 
         return result
 
-    # check if today is when the market is open
+    # uses alpaca calendar to see if market is open today
     def is_market_open(self):
-        # Get the NYSE calendar
-        nyse = mcal.get_calendar('NYSE')
-
-        # Get today's date
         start = end = datetime.datetime.now().date()
 
         while end.weekday() != 4:
             end += datetime.timedelta(days=1)
 
-        # Get market schedule for today
-        market_schedule = nyse.valid_days(
-            start_date=start, end_date=end)
-
-        # check if the last available date is today
-        return not market_schedule.empty and market_schedule[-1].to_pydatetime().date() == start
+        calendar = GetCalendarRequest(start=start, end=end)
+        calendar = self.client.get_calendar(calendar)
+        return calendar[-1].date == start
 
     # Checks the orders placed in the last week to minimize over trading in one week
 
