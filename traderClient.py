@@ -34,7 +34,7 @@ class localClient:
 
         is_open = self.is_market_open()
         logger.info(f"The market is {'open' if is_open else 'closed'}.")
-        if is_open:
+        if not is_open:
             result["message"] = f"The market is {'open' if is_open else 'closed'}."
             return result
 
