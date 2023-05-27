@@ -1,9 +1,9 @@
-name: Deploy to AWS Lambda
+name: Deploy to AWS Lambda Dev
 
 on:
   push:
     branches:
-      - main # Replace with your main branch name
+      - dev # Replace with your main branch name
 
 jobs:
   deploy:
@@ -24,14 +24,8 @@ jobs:
         run: |
           zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore" "images/*" "event.json" "main_status.py"
 
-      - name: Deploy to AWS Lambda alpaca_orders_func_PROD
+      - name: Deploy to AWS Lambda alpaca_orders_func_DEV
         run: |
           aws lambda update-function-code \
-            --function-name alpaca_orders_func_PROD \
-            --zip-file fileb://deployment-package.zip
-
-      - name: Deploy to AWS Lambda alpaca_status_func
-        run: |
-          aws lambda update-function-code \
-            --function-name alpaca_status_func \
+            --function-name alpaca_orders_func_DEV \
             --zip-file fileb://deployment-package.zip

@@ -86,7 +86,7 @@ class localClient:
                     logger.error(
                         f"Odd ordered processed: order id <{order.id}>")
                     return -1
-            elif order.status == OrderStatus.FILLED:
+            elif order.status == OrderStatus.FILLED or order.status == OrderStatus.ACCEPTED:
                 if order.notional != None:
                     logger.info(
                         f"Order placed for {order.symbol} for ${float(order.notional):.2f}.")
@@ -100,6 +100,10 @@ class localClient:
                     logger.error(
                         f"Odd ordered processed: order id <{order.id}>")
                     return -1
+            else:
+                logger.error(
+                    f"Status <{order.status}> is different than expected.")
+                return self.limit
 
         return traded
 
