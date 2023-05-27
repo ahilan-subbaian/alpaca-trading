@@ -22,7 +22,7 @@ jobs:
 
       - name: Create Lambda deployment package
         run: |
-          zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore" "images/*" "event.json" "main_status.py"
+          zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore" "images/*" "event.json" "main_status.py" "create_layer_aws.sh"
 
       - name: Deploy to AWS Lambda alpaca_orders_func_DEV
         run: |
