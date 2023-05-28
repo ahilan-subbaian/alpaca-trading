@@ -202,12 +202,17 @@ class localClient:
             logger.info(f"Unable to get market value for {ticker}")
             return 0
 
+    def validate_execute_type(self, execute):
+        if execute not in Execute:
+            logger.error(f"Execute type does not exist: {execute}")
+            return False
+        return True
+
     # Calculates the intended investments for each ticker
 
     def investments(self, limit, execute):
-        if execute not in Execute:
-            logger.error(f"Execute type does not exist: {execute}")
-            return 0
+        if not self.validate_execute_type(execute):
+            return {}
 
         investments = {}
 
@@ -232,8 +237,7 @@ class localClient:
     # Finds the ceiling using averaging math
     # the ceiling is the value all investments should be at minimum
     def ceiling(self, purchase_power, execute):
-        if execute not in Execute:
-            logger.error(f"Execute type does not exist: {execute}")
+        if not self.validate_execute_type(execute):
             return 0
 
         if execute == Execute.EQUAL:
