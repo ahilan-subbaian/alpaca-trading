@@ -92,7 +92,6 @@ class localClient:
 
         trading_check = self.prior_orders()
         if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
-            result["result"] = False
             result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
 
@@ -154,7 +153,7 @@ class localClient:
             else:
                 logger.error(
                     f"Status <{order.status}> is different than expected.")
-                return self.limit
+                return -1
 
         return traded
 
@@ -182,6 +181,7 @@ class localClient:
             if total_invested > (self.limit - self.traded) * 1.05:
                 logger.error(
                     f"Investing {total_invested} which is over the limit <{self.limit}> - traded <{self.traded}>.")
+                return []
             if amount > 0:
                 orders.append(self.marketBuyOrder(symbol, amount))
 
