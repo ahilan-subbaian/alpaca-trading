@@ -92,7 +92,6 @@ class localClient:
 
         trading_check = self.prior_orders()
         if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
-            result["result"] = False
             result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
 
@@ -154,7 +153,7 @@ class localClient:
             else:
                 logger.error(
                     f"Status <{order.status}> is different than expected.")
-                return self.limit
+                return -1
 
         return traded
 
@@ -182,6 +181,7 @@ class localClient:
             if total_invested > (self.limit - self.traded) * 1.05:
                 logger.error(
                     f"Investing {total_invested} which is over the limit <{self.limit}> - traded <{self.traded}>.")
+                return []
             if amount > 0:
                 orders.append(self.marketBuyOrder(symbol, amount))
 
@@ -202,12 +202,17 @@ class localClient:
             logger.info(f"Unable to get market value for {ticker}")
             return 0
 
+    def validate_execute_type(self, execute):
+        if execute not in Execute:
+            logger.error(f"Execute type does not exist: {execute}")
+            return False
+        return True
+
     # Calculates the intended investments for each ticker
 
     def investments(self, limit, execute):
-        if execute not in Execute:
-            logger.error(f"Execute type does not exist: {execute}")
-            return 0
+        if not self.validate_execute_type(execute):
+            return {}
 
         investments = {}
 
@@ -232,8 +237,7 @@ class localClient:
     # Finds the ceiling using averaging math
     # the ceiling is the value all investments should be at minimum
     def ceiling(self, purchase_power, execute):
-        if execute not in Execute:
-            logger.error(f"Execute type does not exist: {execute}")
+        if not self.validate_execute_type(execute):
             return 0
 
         if execute == Execute.EQUAL:

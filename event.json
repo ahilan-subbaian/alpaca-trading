@@ -4,6 +4,5 @@
     "displace": 5,
     "timeout": 10,
     "logging": "INFO",
-    "paper": true,
-    "prior_trades": true
+    "paper": true
 }

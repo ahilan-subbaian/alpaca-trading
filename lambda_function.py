@@ -24,7 +24,6 @@ def lambda_handler(event, context):
     displace = event['displace']
     timeout = event['timeout']
     paper = event['paper']
-    prior_trades = event.get('prior_trades', False)
 
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
