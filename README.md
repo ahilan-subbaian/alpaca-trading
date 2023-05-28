@@ -52,3 +52,12 @@ timeout: How long to wait to check status
 7. Create an [AWS EventBridge Scheduler](https://us-east-1.console.aws.amazon.com/scheduler/home?region=us-east-1#schedules)
    - Input target payload from event.json
 8. Verify execution on [Alpaca](https://alpaca.markets/)
+
+## Scripts
+
+1. create_layer_aws.sh
+   - Pass in the name of a python package to create a layer in aws
+2. disable_scheduler.sh
+   - Pass in the name of a AWS EventBridge Scheduler to set its state to disabled
+3. enable_scheduler.sh
+   - Pass in the name of a AWS EventBridge Scheduler to set its state to enabled

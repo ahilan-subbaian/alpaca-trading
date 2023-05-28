@@ -28,4 +28,4 @@ aws lambda publish-layer-version --layer-name packages --zip-file fileb://$ZIP_N
 # clean up: remove the venv directory, the package directory and the zip file
 rm -rf venv
 rm -rf $DIR
-# rm $ZIP_NAME
+rm $ZIP_NAME
