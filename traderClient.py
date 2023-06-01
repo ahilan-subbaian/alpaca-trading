@@ -66,11 +66,11 @@ class localClient:
 
         ceiling = self.ceiling(purchase_power, execute)
         logger.info(f"Ceiling: {ceiling:.2f}")
-        if ceiling == 0:
+        if ceiling <= 0:
             result["message"] = "Failed in retrieving ceiling"
             return result
 
-        investments = self.investments(purchase_power, execute)
+        investments = self.investments(ceiling, execute)
         logger.info(f"Investments: {investments}")
         if len(investments) == 0 or any([i not in self.tickers for i in investments]):
             result["message"] = "Failed in retrieving investments"
@@ -78,7 +78,7 @@ class localClient:
 
         orders = self.place_orders(investments)
         logger.info(f"Number of orders: {len(orders)}")
-        if len(orders) == 0:
+        if len(orders) == 0 or len(orders) > len(self.tickers):
             result["message"] = "Failed in retrieving orders"
             return result
 
@@ -91,6 +91,7 @@ class localClient:
             return result
 
         trading_check = self.prior_orders()
+        logger.info(f"Trading check: {trading_check}")
         if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
             result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
@@ -176,14 +177,14 @@ class localClient:
         orders = []
 
         total_invested = 0
-        for symbol, amount in investments.items():
+        for ticker, amount in investments.items():
             total_invested += amount
             if total_invested > (self.limit - self.traded) * 1.05:
                 logger.error(
                     f"Investing {total_invested} which is over the limit <{self.limit}> - traded <{self.traded}>.")
                 return []
             if amount > 0:
-                orders.append(self.marketBuyOrder(symbol, amount))
+                orders.append(self.marketBuyOrder(ticker, amount))
 
         return orders
 
@@ -238,7 +239,7 @@ class localClient:
     # the ceiling is the value all investments should be at minimum
     def ceiling(self, purchase_power, execute):
         if not self.validate_execute_type(execute):
-            return 0
+            return -1
 
         if execute == Execute.EQUAL:
             asset_values = [self.get_position_value(
@@ -251,19 +252,23 @@ class localClient:
                 if value > ceiling:
                     total -= value
                 else:
+                    if len(asset_values) * ceiling > sum(asset_values) + purchase_power:
+                        logger.error(
+                            f"Ceiling is too high: {ceiling}, aasets: {[f'{value:.2f}' for value in asset_values]}")
+                        return -1
                     logger.info(
                         f"Holding values: {[f'{value:.2f}' for value in asset_values]} and ceiling: {ceiling}")
                     return ceiling
 
             logger.error(
                 f"Ended beyond for loop in calculateInvestment, holdings: {[f'{value:.2f}' for value in asset_values]} and ceiling {ceiling}")
-            return 0
+            return -1
 
         if execute == Execute.SPLIT:
             return purchase_power
 
         logger.error(f"Did not find execute: {execute}")
-        return {}
+        return -1
 
     # Finds the amount that will be in
 
