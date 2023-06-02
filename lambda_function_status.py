@@ -39,6 +39,7 @@ def lambda_handler(event, context):
         logger.error(f"Traded <{traded}> over the limit <{limit}>.")
         return {"result": False}
     else:
-        logger.info(f"Traded <{traded}> over the last 7 days.")
+        logger.info(
+            f"Traded <{traded}> over the last 7 days (under the ${limit} limit).")
 
     return {"result": True}
