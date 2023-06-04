@@ -12,7 +12,7 @@ def lambda_handler(event, context):
     # Sets logging configuration to "Time - Level - message"
     for handler in logging.getLogger().handlers:
         logging.getLogger().removeHandler(handler)
-    logging.basicConfig(level=event['logging'],
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
     logger = logging.getLogger(__name__)
 
