@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
-import json
-import traderClient
+import client
 import logging
 
 load_dotenv()
@@ -19,20 +18,17 @@ def lambda_handler(event, context):
 
     logger.info(f"Event passed in {event}")
 
-    tickers = event['tickers']
+    symbols = event['symbols']
     limit = event['limit']
-    displace = event['displace']
-    timeout = event['timeout']
     paper = event['paper']
 
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
     # Inititalize trading client
-    client = traderClient.localClient(
-        apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
+    connection = client.AlpacaClient(apiKey, secretKey, limit, symbols, paper)
 
-    response = client.handler()
+    response = connection.execute()
 
     if not response['result']:
         logger.error(
