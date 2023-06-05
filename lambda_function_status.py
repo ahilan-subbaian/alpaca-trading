@@ -13,27 +13,24 @@ def lambda_handler(event, context):
     # Sets logging configuration to "Time - Level - message"
     for handler in logging.getLogger().handlers:
         logging.getLogger().removeHandler(handler)
-    logging.basicConfig(level=event['logging'],
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
     logger = logging.getLogger(__name__)
 
     logger.info(f"Event passed in {event}")
 
-    tickers = event['tickers']
+    symbols = event['symbols']
     limit = event['limit']
-    displace = event['displace']
-    timeout = event['timeout']
     paper = event['paper']
-    prior_trades = event.get('prior_trades', False)
 
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
     # Inititalize trading client
-    client = traderClient.localClient(
-        apiKey, secretKey, limit, tickers, displace, timeout, paper=paper)
+    connection = traderClient.AlpacaClient(
+        apiKey, secretKey, limit, symbols, paper)
 
-    traded = client.prior_orders(days=7)
+    traded = connection.prior_orders()
 
     if traded > limit * 1.05:
         logger.error(f"Traded <{traded}> over the limit <{limit}>.")

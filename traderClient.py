@@ -37,65 +37,85 @@ class localClient:
             execute = Execute.EQUAL
         else:
             execute = Execute.SPLIT
-        logger.info(f"Will be executing as {execute}.")
+        logger.info(f"Will be executing script as {execute}.")
 
-        is_open = self.is_market_open()
-        logger.info(f"The market is {'open' if is_open else 'closed'}.")
-        if not is_open:
+        # Check to see if the market is open
+        is_market_open = self.is_market_open()
+        logger.info(f"is_market_open: {is_market_open}")
+        # fail if the market is closed, will return true since this is not an error
+        if not is_market_open:
             result["result"] = True
-            result["message"] = f"The market is {'open' if is_open else 'closed'}."
+            result["message"] = f"The market is {'open' if is_market_open else 'closed'}."
             return result
 
-        self.traded = self.prior_orders()
-        logger.info(f"Traded: {self.traded}")
+        # gets the amount of money to invest in stocks for this week
+        self.traded = self.prior_orders(days=5)
+        logger.info(f"Traded {self.traded} this week.")
+        # fail if the amount of money traded is out of the expected range
         if self.traded < 0 or self.traded > self.limit * .95:
             result["message"] = f"Traded <{self.traded}> which is out of expected range."
             return result
 
-        ratio = self.fridayRatio()
-        logger.info(f"Ratio: {ratio}")
-        if ratio == 0:
+        # checks how many fridays are left in the month to determine the ratio
+        cash_invest_ratio = self.fridayRatio()
+        logger.info(f"fridayRatio: {cash_invest_ratio}")
+        # fail if the ratio is not a positive number (undefined or error in calculation)
+        if cash_invest_ratio == 0:
             result['message'] = "Failed in retrieving ratio"
             return result
 
-        purchase_power = self.purchase_power(ratio)
+        # this is the total amount that will beinvested in stocks this week
+        purchase_power = self.purchase_power(cash_invest_ratio)
         logger.info(f"Purchase Power: {purchase_power}")
+        # issue if the purchase power is not a positive number (undefined or error in calculation)
         if purchase_power <= 0:
             result["message"] = "Failed in retrieving purchase_power"
             return result
 
-        ceiling = self.ceiling(purchase_power, execute)
-        logger.info(f"Ceiling: {ceiling:.2f}")
-        if ceiling <= 0:
+        # this is the maximum amount that can be invested in a single stock
+        investing_maximum = self.ceiling(purchase_power, execute)
+        logger.info(f"Ceiling: {investing_maximum:.2f}")
+        # fail if the ceiling is not a positive number (undefined or error in calculation)
+        if investing_maximum <= 0:
             result["message"] = "Failed in retrieving ceiling"
             return result
 
-        investments = self.investments(ceiling, execute)
-        logger.info(f"Investments: {investments}")
-        if len(investments) == 0 or any([i not in self.tickers for i in investments]):
+        # this is the amount to be invested in each stock
+        individal_investments = self.investments(investing_maximum, execute)
+        logger.info(f"Investments: {individal_investments}")
+        # investments need to exist, investments need to all be in self.tickers, and investments need to be less than the purchase power
+        if len(individal_investments) == 0 or any([i not in self.tickers for i in individal_investments]) or sum(individal_investments.values()) > self.limit - self.traded:
             result["message"] = "Failed in retrieving investments"
             return result
 
-        orders = self.place_orders(investments)
-        logger.info(f"Number of orders: {len(orders)}")
-        if len(orders) == 0 or len(orders) > len(self.tickers):
+        # places the orders
+        order_information = self.place_orders(individal_investments)
+        logger.info(f"Place_orders: {order_information}")
+        # fail if there are no orders or if there are more orders than there are stocks
+        if len(order_information) == 0 or len(order_information) > len(self.tickers):
             result["message"] = "Failed in retrieving orders"
             return result
 
+        # waits for the orders to be filled
         time.sleep(self.timeout)
 
-        messages = self.get_status(orders)
-        logger.info(f"Messages: {messages}")
-        if len(messages) > 0:
-            result["message"] = ' '.join(messages)
+        # checks the status of the orders
+        unfilled_orders = self.get_status(order_information)
+        logger.info(f"Get Status: {unfilled_orders}")
+        # fail if there are any errors in placing the orders
+        if unfilled_orders > 0:
+            result["message"] = f"Number of errors in placing orders: {unfilled_orders}"
             return result
 
-        trading_check = self.prior_orders()
-        logger.info(f"Trading check: {trading_check}")
-        if trading_check < self.limit * 0.95 or trading_check > self.limit * 1.05:
-            result["message"] = f"Traded <{trading_check:.2f}> which is not similar to the limit <{self.limit:.2f}>"
+        # checks to see if the orders are within the expected range
+        total_traded = self.prior_orders(days=5)
+        logger.info(f"Trading check: {total_traded}")
+        # fail if the orders are not within the expected range
+        if total_traded < self.limit * 0.95 or total_traded > self.limit * 1.05:
+            result["message"] = f"Traded <{total_traded:.2f}> which is not similar to the limit <{self.limit:.2f}>"
             return result
 
+        # success
         result["message"] = "Successfully completed all orders"
         result["result"] = True
 
@@ -127,26 +147,13 @@ class localClient:
 
         for order in orders:
             if order.status == OrderStatus.CANCELED:
-                if order.notional != None:
-                    logger.info(
-                        f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, notional <{float(order.notional):.2f}>")
-                elif order.qty != None:
-                    logger.info(
-                        f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, notional <{float(order.qty):.2f}>")
-                else:
-                    logger.error(
-                        f"Odd ordered processed: order id <{order.id}>")
-                    return -1
-            elif order.status == OrderStatus.FILLED or order.status == OrderStatus.ACCEPTED:
+                logger.info(
+                    f"Canceled Order: created <{order.created_at}>, canceled <{order.canceled_at}>, symbol <{order.symbol}>, notional <{float(order.notional):.2f}>, qty <{float(order.qty):.2f}>")
+            elif order.status == OrderStatus.FILLED:
                 if order.notional != None:
                     logger.info(
                         f"Order placed for {order.symbol} for ${float(order.notional):.2f}.")
                     traded += float(order.notional)
-                elif order.qty != None:
-                    logger.info(
-                        f"Order placed for {order.symbol} for {float(order.qty):.2f} shares.")
-                    traded += float(order.qty) * \
-                        float(order.filled_avg_price)
                 else:
                     logger.error(
                         f"Odd ordered processed: order id <{order.id}>")
@@ -161,20 +168,21 @@ class localClient:
     # Checks to make sure that all orders were filled,
     # returns a message holding all tickers that did not execute
     def get_status(self, orders):
-        messages = []
+        unfilled_orders = 0
 
         # Make sure all orders have been filled
         for order in orders:
             order_info = self.client.get_order_by_id(order.id)
             if order_info.status.lower() != 'filled':
-                messages.append(
+                logger.error(
                     f"Order failed on {order_info.symbol} with status: {order_info.status.lower()} and amount: {float(order_info.notional):.2f}.")
+                unfilled_orders += 1
 
-        return messages
+        return unfilled_orders
 
     # Places order for each {ticker: amount} in parameters
     def place_orders(self, investments):
-        orders = []
+        order_info = []
 
         total_invested = 0
         for ticker, amount in investments.items():
@@ -184,9 +192,9 @@ class localClient:
                     f"Investing {total_invested} which is over the limit <{self.limit}> - traded <{self.traded}>.")
                 return []
             if amount > 0:
-                orders.append(self.marketBuyOrder(ticker, amount))
+                order_info.append(self.marketBuyOrder(ticker, amount))
 
-        return orders
+        return order_info
 
     # Creates a market order and returns the order details
     def marketBuyOrder(self, symbol, amount):
@@ -227,12 +235,12 @@ class localClient:
         # Adds all tickers to investments with
         # the total investment amount divided by number of tickers
         if execute == Execute.SPLIT:
-            limit = limit / len(self.tickers)
             for ticker in self.tickers:
                 investments[ticker] = limit
             return investments
 
-        logger.error(f"Did not find execute: {execute}")
+        logger.error(
+            f"Did not find execute: {execute}, in function investments()")
         return {}
 
     # Finds the ceiling using averaging math
@@ -265,9 +273,9 @@ class localClient:
             return -1
 
         if execute == Execute.SPLIT:
-            return purchase_power
+            return purchase_power / len(self.tickers)
 
-        logger.error(f"Did not find execute: {execute}")
+        logger.error(f"Did not find execute: {execute}, in function ceiling()")
         return -1
 
     # Finds the amount that will be in
