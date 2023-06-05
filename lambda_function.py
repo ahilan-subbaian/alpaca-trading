@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     logger.info(f"symbols: {symbols}, limit: {limit}, paper: {str(paper)}")
 
     # validate inputs
-    if not isinstance(symbols, list) or len(symbols) == 0:
+    if not isinstance(symbols, list) or len(symbols) == 0 or not all(isinstance(symbol, str) for symbol in symbols):
         logger.error("No symbols provided")
         return {"result": False, "message": "no symbols provided"}
     if not isinstance(limit, int) or limit <= 0:
@@ -72,7 +72,7 @@ def lambda_handler(event, context):
 
     if 'result' not in response or 'message' not in response:
         logger.error(
-            f"Response message: {response}")
+            f"Response: {response} does not contain result or message")
     elif not response['result']:
         logger.error(
             f"Response message: {response['message']}")
