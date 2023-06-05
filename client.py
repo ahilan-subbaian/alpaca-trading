@@ -47,16 +47,14 @@ class AlpacaClient:
         orders = self.place_order(purchase_power)
         logger.info(f"Orders placed: {orders}")
         if len(orders) != len(self.symbols):
-            response["message"] = "order count does not match symbol count"
-            return response
+            logger.error(f"Order count does not match symbol count")
 
         time.sleep(5)
 
         failed_orders = self.check_order_status(orders)
         logger.info(f"Failed orders: {failed_orders}")
         if failed_orders > 0:
-            response["message"] = "failed orders"
-            return response
+            logger.error(f"Failed orders: {failed_orders}")
 
         total_traded = self.prior_trades()
         logger.info(f"Total traded: {total_traded}")
@@ -91,13 +89,22 @@ class AlpacaClient:
                 time_in_force=TimeInForce.DAY,
             )
 
+            try:
+                orders.append(self.client.submit_order(order))
+            except Exception as e:
+                logger.error(f"Error placing order: {e}")
+                continue
+
             logger.info(f"Order placed: {order}")
-            orders.append(self.client.submit_order(order))
 
         return orders
 
     def purchase_power(self, cash_invest_ratio):
-        account_cash = self.client.get_account().cash
+        try:
+            account_cash = self.client.get_account().cash
+        except Exception as e:
+            logger.error(f"Error fetching account cash: {e}")
+            return 0
         logger.info(f"Account cash: {account_cash}")
         cash_invest = account_cash * cash_invest_ratio
         purchase_power = min(cash_invest, self.limit - self.traded)
@@ -138,7 +145,11 @@ class AlpacaClient:
             side=OrderSide.BUY,
         )
 
-        orders = self.client.get_orders(order_params)
+        try:
+            orders = self.client.get_orders(order_params)
+        except Exception as e:
+            logger.error(f"Error fetching prior trades: {e}")
+            return -1
         traded = 0
 
         for order in orders:
@@ -164,6 +175,11 @@ class AlpacaClient:
             end += datetime.timedelta(days=1)
 
         calendar = GetCalendarRequest(start=start, end=end)
-        calendar = self.client.get_calendar(calendar)
+
+        try:
+            calendar = self.client.get_calendar(calendar)
+        except Exception as e:
+            logger.error(f"Error fetching calendar: {e}")
+            return False
 
         return len(calendar) > 0 and calendar[-1].date == start
