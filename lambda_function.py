@@ -4,8 +4,13 @@ import client
 import logging
 
 load_dotenv()
+# Removes all configururations from the logger
+# Sets logging configuration to "Time - Level - message"
+for handler in logging.getLogger().handlers:
+    logging.getLogger().removeHandler(handler)
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
