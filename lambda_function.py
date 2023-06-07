@@ -4,6 +4,7 @@ import client
 import logging
 
 load_dotenv()
+
 # Removes all configururations from the logger
 # Sets logging configuration to "Time - Level - message"
 for handler in logging.getLogger().handlers:
@@ -15,50 +16,27 @@ logger = logging.getLogger(__name__)
 
 def lambda_handler(event, context):
 
-    logger.info(f"Event passed in {event}")
+    logger.info(f"Event: {event}")
 
-    necessary_keys = ['symbols', 'limit', 'paper']
-    missing_keys = [key for key in necessary_keys if key not in event]
-    if missing_keys:
-        missing_keys_str = ', '.join(missing_keys)
-        logger.error(f"Event missing keys: {missing_keys_str}")
-        return {"result": False, "message": f"Event missing keys: {missing_keys_str}"}
+    # validate event having only the required keys
+    only_keys = ['symbols', 'limit', 'paper']
+    if sorted(only_keys) != sorted(event.keys()):
+        logger.error(f"Event contains keys other than {only_keys}")
+        return {"result": False, "message": f"Event contains keys other than {only_keys}"}
 
     symbols = event['symbols']
     limit = event['limit']
     paper = event['paper']
-
-    logger.info(f"symbols: {symbols}, limit: {limit}, paper: {str(paper)}")
-
-    # validate inputs
-    if not isinstance(symbols, list) or len(symbols) == 0 or not all(isinstance(symbol, str) for symbol in symbols):
-        logger.error("No symbols provided")
-        return {"result": False, "message": "no symbols provided"}
-    if not isinstance(limit, int) or limit <= 0:
-        logger.error("Invalid limit provided")
-        return {"result": False, "message": "invalid limit provided"}
-    if not isinstance(paper, bool):
-        logger.error("Invalid paper provided")
-        return {"result": False, "message": "invalid paper provided"}
 
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
     logger.info("API and Secret keys retrieved successfully")
 
-    # make sure keys are not empty
-    if not apiKey:
-        logger.error("API Key is missing.")
-        return {"result": False, "message": "API Key is missing."}
-
-    if not secretKey:
-        logger.error("Secret Key is missing.")
-        return {"result": False, "message": "Secret Key is missing."}
-
+    # Inititalize trading client
     try:
-        # Inititalize trading client
         connection = client.AlpacaClient(
-            apiKey, secretKey, limit, symbols, paper)
+            apiKey=apiKey, secretKey=secretKey, symbols=symbols, limit=limit, paper=paper)
     except Exception as e:
         error_message = f"Error initializing trading client: {str(e)}"
         logger.error(error_message)
@@ -66,6 +44,7 @@ def lambda_handler(event, context):
 
     logger.info("AlpacaClient initialized successfully")
 
+    # Execute trading client actions
     try:
         response = connection.execute()
     except Exception as e:
@@ -75,6 +54,7 @@ def lambda_handler(event, context):
 
     logger.info(f"Response received: {response}")
 
+    # Validate response
     if 'result' not in response or 'message' not in response:
         logger.error(
             f"Response: {response} does not contain result or message")
