@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 
-def lambda_handler(event, context):
+def lambda_handler(event: dict, context):
 
     logger.info(f"Event: {event}")
 
@@ -31,7 +31,7 @@ def lambda_handler(event, context):
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
-    logger.info("API and Secret keys retrieved successfully")
+    logger.info("API keys, Secret keys, symbols, limit and paper retrieved successfully")
 
     # Inititalize trading client
     try:

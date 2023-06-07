@@ -46,6 +46,34 @@ class AlpacaClient:
     def execute(self):
         response = {"result": False, "message": "execution failed"}
 
+        # set self.traded to amount traded this week
+        execution_response = self.pre_order_checks()
+        if not execution_response["result"]:
+            return execution_response
+
+        # place orders
+        execution_response = self.order()
+        # populate orders
+        orders = execution_response.pop("orders")
+        if not execution_response["result"]:
+            return execution_response
+
+        time.sleep(5)
+
+        # post order checks
+        execution_response = self.post_order_checks(orders)
+        if not execution_response["result"]:
+            return execution_response
+
+        # success
+        response["result"] = True
+        response["message"] = "execution successful"
+        return response
+
+    # checks to be done before placing orders
+    def pre_order_checks(self):
+        response = {"result": False, "message": "pre-order checks failed"}
+
         # validate prior trades as less than limit
         # set self.traded to amount traded this week
         self.traded = self.prior_trades()
@@ -62,6 +90,15 @@ class AlpacaClient:
             response["message"] = "market is closed"
             return response
 
+        # success
+        response["result"] = True
+        response["message"] = "pre-order checks successful"
+        return response
+
+    # does calculations to determine amount to trade and places trades
+    def order(self):
+        response = {"result": False, "message": "order failed", "orders": []}
+
         # validate purchase power is within range
         purchase_power = self.purchase_power()
         logger.info(f"Purchase power: {purchase_power}")
@@ -74,8 +111,19 @@ class AlpacaClient:
         logger.info(f"Orders placed: {orders}")
         if len(orders) != len(self.symbols):
             logger.error(f"Order count does not match symbol count")
+            response["result"] = True
+            response["message"] = "order count does not match symbol count"
+            return response
 
-        time.sleep(5)
+        # success
+        response["result"] = True
+        response["message"] = "order successful"
+        response["orders"] = orders
+        return response
+
+    # checks to be done after placing orders
+    def post_order_checks(self, orders):
+        response = {"result": False, "message": "post-order checks failed"}
 
         # validate orders are filled
         failed_orders = self.check_order_status(orders)
@@ -92,12 +140,13 @@ class AlpacaClient:
 
         # success
         response["result"] = True
-        response["message"] = "execution successful"
+        response["message"] = "post-order checks successful"
         return response
 
     # checks if orders were filled
     # Parameters:
     #   orders: list of orders to check
+
     def check_order_status(self, orders):
         failed_orders = 0
 
