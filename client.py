@@ -30,9 +30,16 @@ class AlpacaClient:
             raise ValueError(
                 f"symbols <{symbols}> is invalid. Expected dictionary with values summing to 100.")
 
+        # connection to alpaca api
         self.client = TradingClient(apiKey, secretKey, paper=paper)
+
+        # maximum amount to trade this week
         self.limit = limit
+
+        # dictionary of symbols to trade and their weights
         self.symbols = symbols
+
+        # amount traded this week, will be set in prior_trades()
         self.traded = 0
 
     # main execution method
