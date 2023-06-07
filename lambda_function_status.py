@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 import json
-import traderClient
+import client
 import logging
 
 load_dotenv()
@@ -27,7 +27,7 @@ def lambda_handler(event, context):
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
     # Inititalize trading client
-    connection = traderClient.AlpacaClient(
+    connection = client.AlpacaClient(
         apiKey, secretKey, limit, symbols, paper)
 
     traded = connection.prior_orders()
