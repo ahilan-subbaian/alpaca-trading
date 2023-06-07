@@ -146,7 +146,6 @@ class AlpacaClient:
     # checks if orders were filled
     # Parameters:
     #   orders: list of orders to check
-
     def check_order_status(self, orders):
         failed_orders = 0
 
