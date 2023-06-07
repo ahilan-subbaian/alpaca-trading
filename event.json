@@ -1,5 +1,10 @@
 {
-    "symbols": ["VONG", "SCHD", "SCHG", "SPGP", "RSP"],
+    "symbols": {
+        "VTI": 40,
+        "VXUS": 20,
+        "VGT": 25,
+        "PTY": 15
+    },
     "limit": 50,
     "paper": true
 }

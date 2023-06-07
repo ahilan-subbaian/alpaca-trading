@@ -29,9 +29,3 @@ jobs:
           aws lambda update-function-code \
             --function-name alpaca_orders_func_PROD \
             --zip-file fileb://deployment-package.zip
-
-      - name: Deploy to AWS Lambda alpaca_status_func
-        run: |
-          aws lambda update-function-code \
-            --function-name alpaca_status_func \
-            --zip-file fileb://deployment-package.zip
