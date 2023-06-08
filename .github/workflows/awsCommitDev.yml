@@ -20,9 +20,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
-      - name: run script to update lmabda
-        run: bash scripts/update_lambda_DEV.sh
-
       - name: Run script to update scheduler
         run: bash scripts/upload_script.sh alpaca_orders_schedule_DEV
 

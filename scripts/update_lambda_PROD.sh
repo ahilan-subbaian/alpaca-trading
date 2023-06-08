@@ -6,10 +6,10 @@ script_dir=$(dirname "$0")
 source $script_dir/../.env
 
 # specify lambda function name
-lambda_function_name="alpaca_orders_func_DEV"
+lambda_function_name="alpaca_orders_func_PROD"
 
 # specify the variables you want to update in your lambda function
-variables_to_update="API_KEY_PAPER SECRET_KEY_PAPER"
+variables_to_update="API_KEY_LIVE SECRET_KEY_LIVE"
 
 # start json string
 json='Variables={'
