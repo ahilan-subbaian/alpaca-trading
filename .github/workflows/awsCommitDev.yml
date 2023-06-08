@@ -31,4 +31,4 @@ jobs:
             --zip-file fileb://deployment-package.zip
 
       - name: Run script
-        run: bash update_layer.sh alpaca_orders_schedule_DEV
+        run: bash scripts/update_layer.sh alpaca_orders_schedule_DEV
