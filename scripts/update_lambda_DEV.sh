@@ -28,3 +28,5 @@ json+='}'
 aws lambda update-function-configuration \
     --function-name $lambda_function_name \
     --environment "$json"
+
+sleep 5
