@@ -20,7 +20,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
-      - name: Run script
+      - name: Run script to update scheduler
         run: bash scripts/upload_script.sh alpaca_order_schedule_PROD
 
       - name: Create Lambda deployment package
