@@ -31,7 +31,8 @@ def lambda_handler(event: dict, context):
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
 
-    logger.info("API keys, Secret keys, symbols, limit and paper retrieved successfully")
+    logger.info(
+        "API keys, Secret keys, symbols, limit and paper retrieved successfully")
 
     # Inititalize trading client
     try:

@@ -1,4 +1,6 @@
 from alpaca.trading.client import TradingClient
+from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.requests import StockLatestQuoteRequest
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest, GetCalendarRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderStatus
 import datetime
@@ -7,6 +9,14 @@ import logging
 from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
+
+NOTIONAL_INVALID = {
+    "PTY",
+}
+TOTAL_SYMBOL_VALUE = 100
+TIMEOUT = 5
+GREATER_MULTIPLIER = 1.05
+LESSER_MULTIPLIER = 0.95
 
 
 class AlpacaClient:
@@ -26,12 +36,14 @@ class AlpacaClient:
                 f"secretKey <{secretKey}> is invalid. Expected string.")
         if not limit or not isinstance(limit, int):
             raise ValueError(f"limit <{limit}> is invalid. Expected integer.")
-        if not symbols or not isinstance(symbols, dict) or int(sum(symbols.values())) != 100:
+        if not symbols or not isinstance(symbols, dict) or int(sum(symbols.values())) != TOTAL_SYMBOL_VALUE:
             raise ValueError(
                 f"symbols <{symbols}> is invalid. Expected dictionary with values summing to 100.")
 
         # connection to alpaca api
         self.client = TradingClient(apiKey, secretKey, paper=paper)
+        self.broker = StockHistoricalDataClient(
+            api_key=apiKey, secret_key=secretKey)
 
         # maximum amount to trade this week
         self.limit = limit
@@ -46,10 +58,20 @@ class AlpacaClient:
     def execute(self):
         response = {"result": False, "message": "execution failed"}
 
+        logger.info("Executing trading client actions")
+
         # set self.traded to amount traded this week
         execution_response = self.pre_order_checks()
         if not execution_response["result"]:
             return execution_response
+
+        # validate market is open
+        # is_market_open = self.is_market_open()
+        # logger.info(f"Market open: {is_market_open}")
+        # if not is_market_open:
+        #     response["result"] = True
+        #     response["message"] = "market is closed"
+        #     return response
 
         # place orders
         execution_response = self.order()
@@ -58,7 +80,7 @@ class AlpacaClient:
         if not execution_response["result"]:
             return execution_response
 
-        time.sleep(5)
+        time.sleep(TIMEOUT)
 
         # post order checks
         execution_response = self.post_order_checks(orders)
@@ -78,16 +100,8 @@ class AlpacaClient:
         # set self.traded to amount traded this week
         self.traded = self.prior_trades()
         logger.info(f"Prior trades: {self.traded}")
-        if self.traded < 0 or self.traded > self.limit * .95:
+        if self.traded < 0 or self.traded > self.limit * GREATER_MULTIPLIER:
             response["message"] = "prior trades outside of expected limit"
-            return response
-
-        # validate market is open
-        is_market_open = self.is_market_open()
-        logger.info(f"Market open: {is_market_open}")
-        if not is_market_open:
-            response["result"] = True
-            response["message"] = "market is closed"
             return response
 
         # success
@@ -99,10 +113,15 @@ class AlpacaClient:
     def order(self):
         response = {"result": False, "message": "order failed", "orders": []}
 
+        # make sure we have not traded more than limit
+        if self.traded >= self.limit * LESSER_MULTIPLIER:
+            response["message"] = "order not placed, limit reached"
+            return response
+
         # validate purchase power is within range
         purchase_power = self.purchase_power()
         logger.info(f"Purchase power: {purchase_power}")
-        if purchase_power <= 0 or purchase_power > (self.limit - self.traded) * 1.05:
+        if purchase_power <= 0 or purchase_power > (self.limit - self.traded) * GREATER_MULTIPLIER:
             response["message"] = "purchase power is out of range"
             return response
 
@@ -134,7 +153,7 @@ class AlpacaClient:
         # validate total traded is within range
         total_traded = self.prior_trades()
         logger.info(f"Total traded: {total_traded}")
-        if total_traded < self.limit * .95 or total_traded > self.limit * 1.05:
+        if total_traded < self.limit * LESSER_MULTIPLIER or total_traded > self.limit * GREATER_MULTIPLIER:
             response["message"] = "total traded outside of expected limit"
             return response
 
@@ -150,7 +169,7 @@ class AlpacaClient:
         failed_orders = 0
 
         for order in orders:
-            order = self.client.get_order(order.id)
+            order = self.client.get_order_by_id(order.id)
             if order.status != OrderStatus.FILLED:
                 logger.error(f"Order failed on: {order}")
                 failed_orders += 1
@@ -164,13 +183,26 @@ class AlpacaClient:
 
         orders = []
         for symbol, amount in self.symbols.items():
-            invesmtment = purchase_power * (amount / 100)
-            order = MarketOrderRequest(
-                symbol=symbol,
-                notional=invesmtment,
-                side=OrderSide.BUY,
-                time_in_force=TimeInForce.DAY,
-            )
+            if symbol not in NOTIONAL_INVALID:
+                investment = purchase_power * (amount / TOTAL_SYMBOL_VALUE)
+                order = MarketOrderRequest(
+                    symbol=symbol,
+                    notional=investment,
+                    side=OrderSide.BUY,
+                    time_in_force=TimeInForce.DAY,
+                )
+            else:
+                investment = purchase_power * (amount / TOTAL_SYMBOL_VALUE)
+                last_price = self.broker.get_stock_latest_quote(
+                    StockLatestQuoteRequest(symbol_or_symbols=symbol))[symbol].bid_price
+                # round up to nearest whole number
+                qty = int(0.5 + investment / last_price)
+                order = MarketOrderRequest(
+                    symbol=symbol,
+                    qty=qty,
+                    side=OrderSide.BUY,
+                    time_in_force=TimeInForce.DAY,
+                )
             logger.info(f"Placing order: {order}")
 
             try:
@@ -184,7 +216,7 @@ class AlpacaClient:
     # calculates the amount that will be traded this week
     def purchase_power(self):
         try:
-            account_cash = self.client.get_account().cash
+            account_cash = float(self.client.get_account().cash)
         except Exception as e:
             logger.error(f"Error fetching account cash: {e}")
             return 0
@@ -221,7 +253,7 @@ class AlpacaClient:
 
     # gets the value of all orders that have been closed since the start of the week
     def prior_trades(self):
-        start = datetime.datetime.now().date()
+        start = datetime.datetime.now()
 
         # finds the first monday of the week
         while start.weekday() != 0:
@@ -247,23 +279,34 @@ class AlpacaClient:
         traded = 0
 
         for order in orders:
-            # cancel orders are not counted but logged
-            if order.status == OrderStatus.CANCELED:
-                logger.info(f"Canceled order: {order}")
-            # filled orders are counted
-            elif order.status == OrderStatus.FILLED:
-                # orders should only be notional orders
-                if order.notional != None:
-                    logger.info(f"Filled order: {order}")
-                    traded += order.notional
-                else:
-                    logger.error(f"Filled order has no notional: {order}")
-                    return -1
-            else:
-                logger.error(f"Unknown order status: {order}")
+            trade = self.process_order(order)
+            if trade == -1:
                 return -1
+            else:
+                traded += trade
 
         # return an integer
+        return traded
+
+    def process_order(self, order):
+        traded = 0
+        # cancel orders are not counted but logged
+        if order.status == OrderStatus.CANCELED:
+            logger.info(f"Canceled order: {order}")
+        # filled orders are counted
+        elif order.status == OrderStatus.FILLED:
+            if order.notional != None:
+                logger.info(f"Filled order: {order}")
+                traded = float(order.notional)
+            elif order.qty != None:
+                logger.info(f"Filled order: {order}")
+                traded = float(order.qty) * float(order.filled_avg_price)
+            else:
+                logger.error(f"Filled order has no values: {order}")
+                return -1
+        else:
+            logger.error(f"Unknown order status: {order}")
+            return -1
         return traded
 
     # checks if today is the last day the market is open this week
