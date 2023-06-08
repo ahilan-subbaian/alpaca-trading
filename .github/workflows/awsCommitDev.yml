@@ -20,6 +20,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
+      - name: list files
+        run: ls -R
+
       - name: Run script
         run: bash scripts/update_layer.sh alpaca_orders_schedule_DEV
 
