@@ -66,12 +66,12 @@ class AlpacaClient:
             return execution_response
 
         # validate market is open
-        # is_market_open = self.is_market_open()
-        # logger.info(f"Market open: {is_market_open}")
-        # if not is_market_open:
-        #     response["result"] = True
-        #     response["message"] = "market is closed"
-        #     return response
+        is_market_open = self.is_market_open()
+        logger.info(f"Market open: {is_market_open}")
+        if not is_market_open:
+            response["result"] = True
+            response["message"] = "market is closed"
+            return response
 
         # place orders
         execution_response = self.order()
