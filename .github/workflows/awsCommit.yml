@@ -20,6 +20,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1 # Replace with your desired AWS region
 
+      - name: Run script
+        run: bash scripts/upload_script.sh alpaca_order_schedule_PROD
+
       - name: Create Lambda deployment package
         run: |
           zip -r deployment-package.zip . -x "README.md" "workflow.jpg" "test.py" "requirements.txt" "main.py" ".gitignore" "images/*" "event.json" "main_status.py" "create_layer_aws.sh" "scripts/*"
