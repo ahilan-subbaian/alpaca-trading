@@ -32,3 +32,6 @@ jobs:
 
       - name: Run script
         run: bash scripts/update_layer.sh alpaca_orders_schedule_DEV
+
+      - name: list files
+        run: ls -R
