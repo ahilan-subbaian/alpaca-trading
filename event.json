@@ -5,6 +5,6 @@
         "VGT": 25,
         "PTY": 15
     },
-    "limit": 500,
+    "limit": 1000,
     "paper": true
 }

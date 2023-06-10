@@ -7,8 +7,9 @@ import dotenv
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
+    format="%(asctime)s - %(levelname)s - Line %(lineno)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    filename="/home/ec2-user/logs/alpaca_trading.log",
 )
 logger = logging.getLogger(__name__)
 
@@ -36,8 +37,6 @@ def main():
 
     apiKey = os.getenv(f'API_KEY_{"PAPER" if paper else "LIVE"}')
     secretKey = os.getenv(f'SECRET_KEY_{"PAPER" if paper else "LIVE"}')
-
-    logger.info(apiKey, secretKey)
 
     logger.info(
         "API keys, Secret keys, symbols, limit and paper retrieved successfully"
@@ -72,7 +71,7 @@ def main():
 
 if __name__ == "__main__":
     start = time.time()
-    logger.info(f"Start time: {start}\n\n")
+    logger.info(f"Start time: {start}")
 
     response = main()
 
@@ -81,4 +80,4 @@ if __name__ == "__main__":
     else:
         logger.error(response["message"])
 
-    logger.info(f"\n\nTotal time: {time.time() - start}")
+    logger.info(f"Total time: {time.time() - start}")
