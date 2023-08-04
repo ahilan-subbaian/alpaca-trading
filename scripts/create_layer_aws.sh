@@ -2,7 +2,7 @@
 
 # define the directory and zip name
 DIR="python"
-ZIP_NAME="packages.zip"
+ZIP_NAME="alpaca-py.zip"
 
 # create a new virtual environment
 python3 -m venv venv
@@ -23,7 +23,7 @@ deactivate
 zip -r -9 $ZIP_NAME $DIR
 
 # create a new layer and upload the zip file
-aws lambda publish-layer-version --layer-name packages --zip-file fileb://$ZIP_NAME --compatible-runtimes python3.10
+aws lambda publish-layer-version --layer-name alpaca-py --zip-file fileb://$ZIP_NAME --compatible-runtimes python3.10
 
 # clean up: remove the venv directory, the package directory and the zip file
 rm -rf venv
